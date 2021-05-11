@@ -1,5 +1,7 @@
 # Python_para_ESAR
-Repositorio para los programas en Matlab y Python
+## Grupo de Magnetismo y Materiales Magnéticos 
+Repositorio para los programas utilizados en el análisis de datos para medidas de ESAR.
+
 
 Para gestionar el reposotorio puede usarse Visual Studio Code o bien instalando GIT (https://git-scm.com/downloads).
 Para usar este último desde el correspondiente prompt, dejo una cheatsheet:
