@@ -1126,9 +1126,3 @@ end_time = time.time()
 print(f'Tiempo de ejecución del script: {(end_time-start_time):6.3f} s.')
 
 
-'''
-graficar calibraciones y respectivos ajustes. 
-Calcular/visualizar dispersion de la recta
-Ponerla en Inset en figura con todos los ciclos.
-'''
-
