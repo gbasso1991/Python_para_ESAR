@@ -39,3 +39,6 @@ Para usar este último desde el correspondiente prompt, dejo una cheatsheet:
 ```  
 -git pull origin master
 ```
+
+
+Si todo esto no nos funciona, siempre podemos agregar los archivos a mano ;)
