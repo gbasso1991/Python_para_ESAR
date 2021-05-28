@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 possessor.py 
-Giuliano Andres Basso
+Giuliano Andrés Basso
 Aplico modificaciones a Planet_caravan_20210419.py 
 basado en cactus_20210507.m
 11 Mayo 2021 
