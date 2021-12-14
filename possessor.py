@@ -99,7 +99,7 @@ from astropy.io import ascii
 from astropy.table import Table, Column, MaskedColumn
 from sklearn.metrics import r2_score
 from pprint import pprint
-#%%$Funciones que usa el script
+#%% Funciones que usa el script
 '''Funcion: fft_smooth()'''
 
 def fft_smooth(data_v,freq_n):
@@ -862,8 +862,8 @@ Analisis_de_Fourier = 1 # sobre las señales, imprime espectro de señal muestra
 # escriba guarda_imagen_ciclo=1. Caso contrario, deje 0 o cualquier otro valor.
 guarda_imagen_ciclo=1
 #Masa de nanoparticulas sobre volumen de FF en g/m^3, se utiliza para el cálculo de SAR'''
-concentracion = 2*10000 #1e4g/m3==10 g/l
-#Permeabilidad magnetica del vacio en N/A^2#
+concentracion = 10000 #1e4g/m3==10 g/l
+#Permeabilidad magnetica del vacio en N/A^2#    
 mu_0 = 4*np.pi*10**-7
 #Nombre del archivo de salida
 nombre_archivo_salida = 'Resultados_ESAR.dat'
@@ -1445,17 +1445,18 @@ for k in range(len(fnames_m)):
 if graficos['Ciclos_HM_m_todos']==1:
     fig = plt.figure(figsize=(14,8),constrained_layout=True)
     ax = fig.add_subplot(1,1,1)
-    axin = ax.inset_axes([0.63,0.05, 0.35,0.35])
+    axin = ax.inset_axes([0.60,0.05, 0.35,0.35])
     axin.set_title('Calibración',loc='center')
     #axin.yaxis.tick_right()
-    plt.setp(axin.get_yticklabels(),visible=False)
+    plt.setp(axin.get_yticklabels(),visible=True)
     plt.setp(axin.get_xticklabels(),visible=True)
+    axin.yaxis.tick_right()
     axin.grid()
     axin.axhline(0,0,1,lw=0.9,c='k')
     axin.axvline(0,0,1,lw=0.9,c='k')
     
     for i in range(len(fnames_m)):      
-        plt.plot(Ciclos_eje_H[i],Ciclos_eje_M[i],label=fnames_m[i][:-4])
+        plt.plot(Ciclos_eje_H[i],Ciclos_eje_M[i],label=f'{fnames_m[i][:-4]}\n$SAR:$ {SAR[i]:.1f} $W/g$')
         axin.plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal[i])
     
     plt.legend(loc='upper left',bbox_to_anchor=(1.02,0.5,0.4,0.5))
