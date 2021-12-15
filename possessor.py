@@ -78,7 +78,7 @@ Se imprime en un archivo de salida la siguiente informacion:
             Magnetización Remanente (kA/m)
             Peor quita de ruido porcentual
 """
-print(__doc__)
+#print(__doc__)
 #%% Packages
 '''Packages'''
 import time
@@ -330,7 +330,8 @@ def encuentra_ruido(t,v,ancho,entorno):
 
 '''Funcion: filtrando_ruido()'''
 def filtrando_ruido(t,v_r,v,filtrar,graf):
-    '''   Sin filtrar: filtrarmuestra/cal = 0
+    '''
+    Sin filtrar: filtrarmuestra/cal = 0
     Actis:       filtrarmuestra/cal = 1
     Fourier:     filtrarmuestra/cal = 2   
     Fourier+Actis: filtrarmuestra/cal = 3   
@@ -546,18 +547,21 @@ def promediado_ciclos(t,v_r,v,frecuencia,N_ciclos):
     delta_t = (t_f[-1]-t_f[0])/len(t_f)
     return t_f , v_r_f, v_f , delta_t
 
-def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
+def fourier_señales(t,t_c,v,v_c,v_r,delta_t,polaridad,filtro,frec_limite,name):
     '''
-    Toma señales de muestra y de referencia y via fft obtiene frecuencias y fases.\n
-    frec_muestreo = sample rate 1/delta_t (tipicamente 1e8 o 5e7).\n    
-    Las señales indefectiblemente deben estar recortadas a N ciclos.\n
+    Toma señales de muestra, calibracion y referencia obtieniendo via fft frecuencias y fases.
+    frec_muestreo = sample rate 1/delta_t (tipicamente 1e8 o 5e7).    
+    Las señales indefectiblemente deben estar recortadas a N ciclos.
     Establecer frec limite permite filtrar la interferencia de alta señal del generador RF\n
     Se conoce la polaridad de la señal(del ajuste lineal sobre el ciclo paramagnetico). 
     '''
     t = t - t[0]
-    y = polaridad*v   #muestra (magnetizacion)
-    y_r = v_r         #referencia (campo)
+    t_c = t_c - t_c[0]
+    y = polaridad*v     #muestra (magnetizacion)
+    y_c = polaridad*v_c #calibracion (magnetizacion del paramagneto)
+    y_r = v_r           #referencia (campo)
     N = len(v)
+    N_c = len(v_c)
     N_r = len(v_r)
 #Fourier
     f = rfftfreq(N,d=delta_t) #obtengo la mitad de los puntos, porque uso rfft
@@ -569,31 +573,56 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     g = abs(g_aux)  #magnitud    
     fase = np.angle(g_aux)
     
+    #Idem p/ calibracion
+    f_c = rfftfreq(N_c, d=delta_t)
+    f_c_HF = f_c.copy()
+    f_c = f_c[np.nonzero(f_c<=frec_limite)]
+    g_c_aux = fft(y_c,norm='forward') 
+    g_c = abs(g_c_aux)
+    fase_c= np.angle(g_c_aux)
+    
+    #Idem p/ Referencia
     f_r = rfftfreq(N_r, d=delta_t)
     f_r = f_r[np.nonzero(f_r<=frec_limite)]
     g_r_aux = fft(y_r,norm='forward')
     g_r = abs(g_r_aux)
     fase_r = np.angle(g_r_aux)
+
     #Recorto vectores hasta frec_limite
     g_HF = g.copy() 
+    g_c_HF = g_c.copy()
     #g_HF = g_HF[np.nonzero(f>=frec_limite)]#magnitud de HF
     g = np.resize(g,len(f))
+    g_c = np.resize(g_c,len(f_c))
     g_r = np.resize(g_r,len(f_r))
     g_HF = np.resize(g_HF,len(f_HF))
     g_HF[np.argwhere(f_HF<=frec_limite)]=0 #Anulo LF
+    g_c_HF = np.resize(g_c_HF,len(f_c_HF))
+    g_c_HF[np.argwhere(f_c_HF<=frec_limite)]=0 #Anulo LF
+
 #Obtengo frecuencias cuya intensidad relativa supera umbral dado por el filtro
     indices,_=find_peaks(abs(g),threshold=max(g)*filtro)
+    # anulo armonico fundamental descomentando siguiente linea
+    #indices = np.delete(indices,0)
+    
+    indices_c,_=find_peaks(abs(g_c),threshold=max(g_c)*filtro)
+
     indices_r,_=find_peaks(abs(g_r),threshold=max(g_r)*filtro)
+
 #En caso de frecuencia anomala menor que la fundamental
     if f[indices[0]]<f_r[indices_r[0]]:
         print('ATENCION: detectada subfrecuencia anómala {:.2f} Hz\n'.format(f[indices[0]]))
-        indices = np.delete(indices,0)
+        indices = np.delete(indices,0) 
     else:
         pass
 
     armonicos = f[indices]
     amplitudes = g[indices]
     fases = fase[indices]
+
+    armonicos_c = f_c[indices_c]
+    amplitudes_c = g_c[indices_c]
+    fases_c = fase_c[indices_c]
 
     armonicos_r = f_r[indices_r]
     amplitudes_r = g_r[indices_r]
@@ -603,6 +632,10 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     for i in range(len(indices_r)):
         print(f'{armonicos_r[i]:<10.2f}    {amplitudes_r[i]/max(amplitudes_r):>12.2f}    {fases_r[i]:>12.4f}')
     
+    print('''\nEspectro de la señal de calibracion:\nFrecuencia (Hz) - Intensidad rel - Fase (rad)''')
+    for i in range(len(indices_c)):
+        print(f'{armonicos_c[i]:<10.2f}    {amplitudes_c[i]/max(amplitudes_c):>12.2f}    {fases_c[i]:>12.4f}')
+    
     print('''\nEspectro de la señal de muestra:\nFrecuencia (Hz) - Intensidad rel - Fase (rad)''')
     for i in range(len(indices)):
         print(f'{armonicos[i]:<10.2f}    {amplitudes[i]/max(amplitudes):>12.2f}    {fases[i]:>12.4f}')
@@ -611,48 +644,76 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     frec_multip = []
     indx_impar = []
     indx_par=[]
+
     for n in range(int(frec_limite//int(armonicos[0]))):
         frec_multip.append((2*n+1)*armonicos[0]/1000)
         if (2*n+1)*indices[0]<=len(f):
             indx_impar.append((2*n+1)*indices[0])
             indx_par.append((2*n)*indices[0])
-    f_impar= f[indx_impar] #para grafico 
+    
+    frec_multip_c = []
+    indx_impar_c = []
+    indx_par_c=[]
+    for n in range(int(frec_limite//int(armonicos_c[0]))):
+        frec_multip_c.append((2*n+1)*armonicos_c[0]/1000)
+        if (2*n+1)*indices_c[0]<=len(f_c):
+            indx_impar_c.append((2*n+1)*indices_c[0])
+            indx_par_c.append((2*n)*indices_c[0])
+
+    f_impar= f[indx_impar] #para grafico 1.0
     amp_impar= g[indx_impar]
     fases_impar= fase[indx_impar]
     del indx_par[0]
-
     f_par= f[indx_par] 
     amp_par= g[indx_par]
     fases_par= fase[indx_par]
 
-#Reconstruyo señal impar con ifft
+    f_impar_c= f_c[indx_impar_c] #para grafico 1.1
+    amp_impar_c= g_c[indx_impar_c]
+    fases_impar_c= fase_c[indx_impar_c]
+    del indx_par_c[0]
+    f_par_c= f_c[indx_par_c] 
+    amp_par_c= g_c[indx_par_c]
+    fases_par_c= fase_c[indx_par_c]
+
+#Reconstruyo señal impar con ifft p/ muesta
     h_aux_impar = np.zeros(len(f),dtype=np.cdouble)
     for W in indx_impar:
-        h_aux_impar[W]=g_aux[W] 
+        h_aux_impar[W]=g_aux[W]
     rec_impares = irfft(h_aux_impar,n=len(t),norm='forward')
-
 #Reconstruyo señal par con ifft
     h_aux_par = np.zeros(len(f),dtype=np.cdouble)
     for Z in indx_par:
         h_aux_par[Z]=g_aux[Z] 
     rec_pares = irfft(h_aux_par,n=len(t),norm='forward')
 
+#Idem Calibracion
+    h_c_aux_impar = np.zeros(len(f_c),dtype=np.cdouble)
+    for W in indx_impar_c:
+        h_c_aux_impar[W]=g_c_aux[W]
+    rec_impares_c = irfft(h_c_aux_impar,n=len(t),norm='forward')
+#Reconstruyo señal par con ifft
+    h_c_aux_par = np.zeros(len(f_c),dtype=np.cdouble)
+    for Z in indx_par_c:
+        h_c_aux_par[Z]=g_c_aux[Z] 
+    rec_pares_c = irfft(h_c_aux_par,n=len(t),norm='forward')
+
 #Reconstruyo señal limitada con ifft
-    g_aux = np.resize(g_aux,len(f))
-    rec_limitada = irfft(g_aux,n=len(t),norm='forward')
+    #g_aux = np.resize(g_aux,len(f))
+    #rec_limitada = irfft(g_aux,n=len(t),norm='forward')
 
 #Reconstruyo señal de alta frecuencia
     rec_HF = irfft(g_HF,n=len(t),norm='forward')
-
+    rec_c_HF = irfft(g_c_HF,n=len(t_c),norm='forward')
 #Resto HF a la señal original y comparo con reconstruida impar
     resta = y - rec_HF
 #Veo que tanto se parecen
-    r_2 = r2_score(rec_impares,rec_limitada)
-    r_2_resta  = r2_score(rec_impares,resta)
+    #r_2 = r2_score(rec_impares,rec_limitada)
+    #r_2_resta  = r2_score(rec_impares,resta)
     
-#Grafico 1: 
+#Grafico 1.0 (Muestra): 
     fig = plt.figure(figsize=(8,12),constrained_layout=True)
-    plt.suptitle('Análisis Espectral',fontsize=20)
+    plt.suptitle('Análisis Espectral Muestra',fontsize=20)
 #Señal Orig + Ref
     ax1 = fig.add_subplot(3,1,1)
     ax1.plot(t,y/max(y),'.-',lw=0.9,label='Muestra')
@@ -698,13 +759,63 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     ax3.grid(axis='y')
     ax3.legend()
 
+#Grafico 1.1 (Calibracion): 
+    fig4 = plt.figure(figsize=(8,12),constrained_layout=True)
+    plt.suptitle('Análisis Espectral Calibracion',fontsize=20)
+#Señal Orig + Ref
+    ax1 = fig4.add_subplot(3,1,1)
+    ax1.plot(t_c,y_c/max(y_c),'.-',lw=0.9,label='Calibracion')
+    ax1.plot(t_c,y_r/max(y_r),'.-',c='tab:red',lw=0.9,label='Referencia')
+    ax1.set_xlabel('t (s)')
+    ax1.set_xlim(0,2/armonicos_c[0])
+    ax1.axvspan(0,1/armonicos_c[0],color='g',alpha=0.3)
+    ax1.set_title('Calibracion y referencia - '+str(name)+'_cal', loc='left', fontsize=13)
+    ax1.legend(loc='best')
+    ax1.grid()  
+#Espectro de Frecuencias 
+    ax2 = fig4.add_subplot(3,1,2)
+    ax2.plot(f_c/1000,g_c,'.-',lw=0.9)
+    #ax2.scatter(armonicos/1000,amplitudes,c='r',marker='+',label='armónicos')
+    for item in frec_multip:
+        ax2.axvline(item,0,1,color='r',alpha=0.4,lw=0.9)   
+    ax2.scatter(f_impar_c/1000,amp_impar_c,marker='x',c='tab:orange',label='armónicos impares',zorder=2.5)
+    ax2.scatter(f_par_c/1000,amp_par_c,marker='+',c='tab:green',label='armónicos pares',zorder=2.5)
+    ax2.set_title('Espectro de frecuencias - {}% - frec max: {:.0f} kHz'.format(filtro*100,frec_limite/1e3), loc='left', fontsize=13)
+    ax2.set_xlabel('Frecuencia (kHz)')
+    ax2.set_ylabel('|F{$\epsilon$}|')   
+    ax2.set_xlim(0,max(f_c)/1000)
+    ax2.legend(loc='best')
+#  Espectro de Fases 
+    ax3 = fig4.add_subplot(3,1,3)
+    ax3.vlines(armonicos_c/1000,ymin=0,ymax=fases_c)
+    ax3.stem(armonicos_c/1000,fases_c,basefmt=' ')
+    ax3.scatter(f_impar_c/1000,fases_impar_c,marker='x',color='tab:orange',label='armónicos impares',zorder=2.5)
+    ax3.scatter(f_par_c/1000,fases_par_c,marker='+',color='tab:green',label='armónicos pares',zorder=2.5)    
+    #ax3.vlines(f_impar/1000, ymin=0, ymax=fases_impar,color='tab:orange')
+    ax3.set_ylim(-np.pi-0.5,np.pi+0.5)
+    ax3.set_yticks([-np.pi,-3*np.pi/4,-np.pi/2,-np.pi/4,0,np.pi/4,np.pi/2,3*np.pi/4,np.pi])
+    ax3.set_yticklabels(['-$\pi$','','$-\pi/2$','','0','','$\pi/2$','','$\pi$'])
+    ax3.axhline(0,0,max(armonicos)/1000,c='k',lw=0.8)
+    for item in frec_multip_c:
+        ax3.axvline(item,.1,0.92,color='r',alpha=0.4,lw=0.9)  
+    #ax3.scatter(armonicos/1000,theta,label='fases redef')    
+    ax3.set_ylabel('Fase')
+    ax3.set_xlabel('Frecuencia (kHz)')
+    #ax3.legend(loc='best')
+    ax3.set_title('Espectro de fases',loc='left', fontsize=13)
+    ax3.set_xlim(0,max(f)/1000)
+    ax3.grid(axis='y')
+    ax3.legend()
+
 #Redefino angulos p/ Fasorial impar
     r0 = 1
     theta_0 = 0
     r = amp_impar/max(amp_impar)
     defasaje_m =  fases_r-fases_impar
+    r_c = amp_impar_c/max(amp_impar_c)
+    defasaje_c = fases_c - fases_impar
 
-#Grafico 2: Espectro Impar, Fasorial, Original+Rec_impar
+#Grafico 2.0: Espectro Impar, Fasorial, Original+Rec_impar (Muestra)
     fig2 = plt.figure(figsize=(8,12),constrained_layout=True)
     plt.suptitle('Reconstruccion impar',fontsize=20)
 # Señal Original + Reconstruida impar
@@ -728,7 +839,6 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     ax2.vlines(f_impar/1000, ymin=0, ymax=amp_impar)
     ax2.axvline(armonicos_r/1000, ymin=0, ymax=1,c='tab:red',label='Referencia',lw=1,alpha=0.8)
     #ax2.stem(armonicos_r/1000,(amplitudes_r/max(amplitudes_r))*max(amp_impar),basefmt=' ',markerfmt='or',bottom=0.0,label='R')
-    
     #for item in f_impar:
         #ax2.axvline(item,0,1,c='tab:orange',lw=0.9)   
     #ax2.scatter(f_par/1000,amp_par,marker='+',c='tab:green',label='armónicos pares',zorder=2.5)
@@ -737,7 +847,6 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     ax2.set_ylabel('|F{$\epsilon$}|')   
     ax2.set_xlim(0,max(f)/1000)
     ax2.set_ylim(0,max(amp_impar)*1.1)
-    
     ax2.grid()
 # inset
     axin = ax2.inset_axes([0.4, 0.35, 0.57, 0.6])
@@ -773,7 +882,73 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     ax3.legend(loc='upper left',bbox_to_anchor=(1.02,0.5,0.4,0.5))
     ax3.set_title('Retraso respecto al campo', loc='center', fontsize=13,va='bottom')
 
-#Grafico 3: Altas frecuencias 
+#Grafico 2.1: Espectro Impar, Fasorial, Original+Rec_impar (Calibracion)
+    fig5 = plt.figure(figsize=(8,12),constrained_layout=True)
+    plt.suptitle('Reconstruccion impar (calibracion)',fontsize=20)
+# Señal Original + Reconstruida impar
+    ax1=fig5.add_subplot(3,1,1)
+    ax1.plot(t_c,y_c,'.-',lw=0.9,label='Señal original')
+    ax1.plot(t_c,rec_impares_c,'-',lw=1.3,label='Componentes impares')
+    ax1.plot(t_c,rec_pares_c,'-',lw=1.1,label='Componentes pares')
+    ax1.set_xlabel('t (s)')
+    ax1.set_xlim(0,2/armonicos_c[0])
+    ax1.axvspan(0,1/armonicos_c[0],color='g',alpha=0.3)
+    ax1.set_title(str(name)+'_cal')
+    # + ' (R$^2$: {:.3f})'.format(r_2), loc='left', fontsize=13)     
+    ax1.grid() 
+    ax1.legend(loc='best')
+# Espectro en fases impares
+    ax2=fig5.add_subplot(3,1,2)
+    #ax2.scatter(armonicos/1000,amplitudes,c='r',marker='+',label='armónicos')
+    ax2.scatter(f_impar_c/1000,amp_impar_c,marker='o',c='tab:blue',label='Armónicos impares',zorder=2.5)
+    ax2.vlines(f_impar_c/1000, ymin=0, ymax=amp_impar_c)
+    ax2.axvline(armonicos_r/1000, ymin=0, ymax=1,c='tab:red',label='Referencia',lw=1,alpha=0.8)
+    #ax2.stem(armonicos_r/1000,(amplitudes_r/max(amplitudes_r))*max(amp_impar),basefmt=' ',markerfmt='or',bottom=0.0,label='R')
+    
+    #for item in f_impar:
+        #ax2.axvline(item,0,1,c='tab:orange',lw=0.9)   
+    #ax2.scatter(f_par/1000,amp_par,marker='+',c='tab:green',label='armónicos pares',zorder=2.5)
+    ax2.set_title('Espectro de la señal de calibracion reconstruida', loc='left', fontsize=13)
+    ax2.set_xlabel('Frecuencia (kHz)')
+    ax2.set_ylabel('|F{$\epsilon$}|')   
+    ax2.set_xlim(0,max(f)/1000)
+    ax2.set_ylim(0,max(amp_impar)*1.1)
+    ax2.grid()
+# inset
+    axin = ax2.inset_axes([0.4, 0.35, 0.57, 0.6])
+    axin.scatter(f_impar_c/1000,fases_impar_c,label='Fases')
+    axin.vlines(f_impar_c/1000, ymin=0, ymax=fases_impar_c)
+    axin.scatter(armonicos_r/1000,fases_r,label='Fases ref',c='tab:red')
+    axin.vlines(armonicos_r/1000, ymin=0, ymax=fases_r,color='tab:red')
+    axin.set_xlabel('Frecuencia (kHz)', fontsize=8)
+    axin.set_ylim(-np.pi-0.5,np.pi+0.5)
+    axin.set_yticks([-np.pi,-np.pi/2,0,np.pi/2,np.pi])
+    axin.set_yticklabels(['-$\pi$','$-\pi/2$','0','$\pi/2$','$\pi$'])
+    axin.axhline(0,0,max(f_impar)/1000,c='k',lw=0.8)
+    #axin.set_ylabel('fase')
+    #axin.legend(loc='best')
+    axin.grid()
+    axin.set_title(' Espectro de fases',loc='left', y=0.87, fontsize=10)
+    axin.set_xlim(0,max(f_impar)/1000)
+# Fasorial impares
+    ax3=fig5.add_subplot(3,1,3,polar=True)
+    ax3.scatter(theta_0,r0,label='Referencia',marker='D',c='tab:red')
+    ax3.plot([0,theta_0], [0,1],'-',c='tab:red')
+    #ax3.plot(defasaje_m,r,'-',c='tab:blue',lw=0.7)
+    ax3.scatter(defasaje_c, r_c, label = 'Muestra',c='tab:blue')
+    for i in range(len(defasaje_c)):
+        ax3.plot([0, defasaje_c[i]], [0, r_c[i]],'-o',c='tab:blue')
+    ax3.spines['polar'].set_visible(False)  # Show or hide the plot spine
+    ax3.set_rmax(1.1)
+    ax3.set_rticks([0.25,0.5,0.75, 1])  # Less radial ticks
+    ##ax3.set_rlabel_position(-22.5)  # Move radial labels away from plotted line
+    ax3.grid(True)
+    ax3.set_theta_zero_location('N')
+    ax3.set_theta_direction(-1)
+    ax3.legend(loc='upper left',bbox_to_anchor=(1.02,0.5,0.4,0.5))
+    ax3.set_title('Retraso respecto al campo', loc='center', fontsize=13,va='bottom')
+
+#Grafico 3: Altas frecuencias (muestra)
     fig3 = plt.figure(figsize=(8,12),constrained_layout=True)
     plt.suptitle('Altas frecuencias',fontsize=20)
 # Espectro en fases impares
@@ -810,7 +985,44 @@ def fourier_señales(t,v,v_r,delta_t,polaridad,filtro,frec_limite,name):
     ax2.grid() 
     ax2.legend(loc='best')
 
-    return armonicos, armonicos_r, amplitudes, amplitudes_r, fases , fases_r , fig, fig2, indices, indx_impar, rec_impares,fig3
+#Grafico 3.1: Altas frecuencias (calibracion)
+    fig6 = plt.figure(figsize=(8,12),constrained_layout=True)
+    plt.suptitle('Altas frecuencias',fontsize=20)
+# Espectro en fases impares
+    ax1=fig6.add_subplot(2,1,1)
+    ax1.stem(f_impar_c/1000,amp_impar_c,linefmt='C0-',basefmt=' ',markerfmt='.',bottom=0.0,label='armónicos impares')
+    ax1.stem(f_par_c/1000,amp_par_c,linefmt='C2-',basefmt=' ',markerfmt='.g',bottom=0.0,label='armónicos pares')
+    ax1.plot(f_c_HF[f_c_HF>frec_limite]/1000,g_c_HF[f_c_HF>frec_limite],'.-',lw=0.9,c='tab:orange',label='Alta frecuencia')
+    #ax1.scatter(armonicos/1000,amplitudes,c='r',marker='+',label='armónicos')
+    #ax1.scatter(f_impar/1000,amp_impar,marker='o',c='tab:blue',label='Armónicos impares',zorder=2.5)
+    #ax1.vlines(f_impar/1000, ymin=0, ymax=amp_impar)
+    #ax1.axvline(armonicos_r/1000, ymin=0, ymax=1,c='tab:red',label='Referencia',lw=1,alpha=0.8)
+    #ax1.stem(armonicos_r/1000,(amplitudes_r/max(amplitudes_r))*max(amp_impar),basefmt=' ',markerfmt='or',bottom=0.0,label='R')
+    ax1.legend(loc='best')
+    ax1.set_title('Espectro de la señal', loc='left', fontsize=13)
+    ax1.set_xlabel('Frecuencia (kHz)')
+    ax1.set_ylabel('|F{$\epsilon$}|')   
+    #ax1.set_xlim(0,max(f)/1000)
+    #ax1.set_ylim(0,max(amp_impar)*1.1)
+    ax1.grid()
+
+# Señal HF + Reconstruida LF
+    ax2=fig6.add_subplot(2,1,2)
+    ax2.plot(t_c,rec_impares_c,'-',lw=1,label=f'Componentes impares (f<{frec_limite/1e6:.0f} MHz)',c='tab:blue',zorder=3)
+    ax2.plot(t_c,rec_pares_c,'-',lw=1,label=f'Componentes pares (f<{frec_limite/1e6:.0f} MHz)',c='tab:green',zorder=3)  
+    ax2.plot(t_c,rec_c_HF,'-',lw=0.9,label=f'Altas frecuencias ($f>${(frec_limite/1e6):.0f} MHz)',c='tab:orange',zorder=2)
+    ax2.plot(t_c,y_c,'-',lw=1.2,label='Señal original',c='tab:red',zorder=1,alpha=0.8)    
+    #ax2.plot(t,resta,'-',lw=0.9,label='Resta')  
+    ax2.set_xlabel('t (s)')
+    ax2.set_xlim(0,5/armonicos_c[0])
+    ax2.set_ylim(1.1*min(y_c),1.1*max(y_c))
+    ax2.axvspan(0,1/armonicos_c[0],color='g',alpha=0.3)
+    ax2.set_title(str(name)+'_cal')
+    # + ' (R$^2$: {:.3f})'.format(r_2), loc='left', fontsize=13)     
+    ax2.grid() 
+    ax2.legend(loc='best')
+
+    return armonicos, armonicos_r, amplitudes, amplitudes_r, fases , fases_r , fig, fig2, indices, indx_impar, rec_impares,rec_impares_c,fig3,fig4,fig5,fig6
 
 #%% Manual Settings
 '''
@@ -1042,13 +1254,13 @@ else:
     print('\nSon {} archivos.'.format(len(fnames_m)+2))
 '''
 Para detectar triadas de archivos (m,c,f) incompletas
-Ojo con esto, para medidas en calentamiento va a cambiar
+Ojo con esto, para medidas en calentamiento esto cambia
 '''
 if ciclos_en_descongelamiento==0:
     if len(fnames_c)<len(fnames_m):
         raise Exception(f'Archivo de calibracion faltante\nArchivos muestra: {len(fnames_m)}\nArchivos calibracion: {len(fnames_c)} ')
     elif len(fnames_f)<len(fnames_m):
-        raise Exception(f'Archivo de fondo faltante\Archivos muestra: {len(fnames_m)}\nArchivos fondo: {len(fnames_f)}')
+        raise Exception(f'Archivo de fondo faltante\nArchivos muestra: {len(fnames_m)}\nArchivos fondo: {len(fnames_f)}')
     elif (len(fnames_m)<len(fnames_c)) or (len(fnames_m)>len(fnames_f)):
         raise Exception(f'Archivo de muestra faltante\nArchivos muestra: {len(fnames_m)}\nArchivos calibracion: {len(fnames_c)}\nArchivos fondo: {len(fnames_f)} ')
     else:
@@ -1193,7 +1405,7 @@ for k in range(len(fnames_m)):
 
     peor_diferencia=max([np.mean(abs(dif_resta_m))/max(Resta_m),np.mean(abs(dif_resta_c))/max(Resta_c)])
 
-    '''Aplico recorte() para tener N periodos'''
+    '''Aplico recorte() para tener N periodos enteros'''
     #Muestra
     if graficos['Recorte_a_periodos_enteros_m']==1:
         t_m_3, v_r_m_3 , Resta_m_3, N_ciclos_m, figura_m_3 = recorte(t_m_2,v_r_m_2,Resta_m_2,frec_m,'muestra')
@@ -1205,12 +1417,8 @@ for k in range(len(fnames_m)):
     else:
         t_c_3, v_r_c_3 , Resta_c_3, N_ciclos_c, figura_c_3 = recorte(t_c_2,v_r_c_2,Resta_c_2,frec_c,0)
 
-#%%%
-    '''Campo y Magnetizacion: se integran funciones de referencia y Resta.'''
-
-    '''Calibracion:'''
     '''
-    Ultimo ajuste sobre referencia
+    Ultimo ajuste sobre las señales de referencia (muestra y  cal)
     '''
     _,_, frec_final_c,_ = ajusta_seno(t_c_3,v_r_c_3)
     _,_, frec_final_m,_ = ajusta_seno(t_m_3,v_r_m_3)
@@ -1220,12 +1428,12 @@ for k in range(len(fnames_m)):
     t_f_c , fem_campo_c , R_c , delta_t_c = promediado_ciclos(t_c_3,v_r_c_3,Resta_c_3,frec_final_c,N_ciclos_c)
     '''
     Integro los ciclos: calcula sumas acumuladas y convierte a campo y magnetizacion
-    '''
-    C_norm_campo=Idc[k]*pendiente_HvsI+ordenada_HvsI
-    '''Cte que dimensionaliza al campo en A/m a partir de la calibracion
+    Cte que dimensionaliza al campo en A/m a partir de la calibracion
     realizada sobre la bobina del RF'''
+    C_norm_campo=Idc[k]*pendiente_HvsI+ordenada_HvsI
+  
     '''
-    Integral de la fem inducida, es proporcional al campo mas una contante
+    Integral de la fem inducida, proporcional al Campo mas una contante
     '''
     campo_ua0_c = delta_t_c*cumulative_trapezoid(fem_campo_c,initial=0)
     #Campo en volt*segundo, falta llevar a ampere/metro.
@@ -1238,11 +1446,11 @@ for k in range(len(fnames_m)):
     '''
     campo_c  = (campo_ua_c/max(campo_ua_c))*C_norm_campo
     '''
-    Integral de la fem inducida, fondo restado, es proporcional a
+    Integral de la fem inducida  (c/ fondo restado), es proporcional a
     la magnetizacion mas una constante
     '''
     magnetizacion_ua0_c = delta_t_c*cumulative_trapezoid(R_c,initial=0)
-    #mangnetizacion en volts*segundo, falta llevar a ampere/metro.
+    #Magnetizacion en volts*segundo, falta llevar a ampere/metro.
     '''
     Resto offset tmb
     '''
@@ -1262,7 +1470,7 @@ for k in range(len(fnames_m)):
     '''
     if Analisis_de_Fourier == 1:
         #aplico la funcion
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,test = fourier_señales(t_m_3,Resta_m_3,v_r_m_3,delta_t[k],polaridad,filtro=0.03,frec_limite=5e6,name=fnames_m[k])
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,delta_t[k],polaridad,filtro=0.03,frec_limite=5e6,name=fnames_m[k])
 
         fig_fourier.savefig('Analisis_Fourier_señales_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
         fig2_fourier.savefig('Reconstruccion_impar_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
@@ -1271,6 +1479,10 @@ for k in range(len(fnames_m)):
     #Reemplazo señal recortada con la filtrada en armonicos impares usando muestra_rec_impar en lugar de Resta_m_3
         
     t_f_m , fem_campo_m , R_m , delta_t_m = promediado_ciclos(t_m_3,v_r_m_3,muestra_rec_impar,frec_final_m,N_ciclos_m)
+    t_f_c , fem_campo_c , R_c , delta_t_c = promediado_ciclos(t_c_3,v_r_c_3,cal_rec_impar,frec_final_c,N_ciclos_c)
+    magnetizacion_ua0_c = delta_t_c*cumulative_trapezoid(R_c,initial=0)
+    magnetizacion_ua_c = magnetizacion_ua0_c-np.mean(magnetizacion_ua0_c)
+
 
 #%%
     if graficos['Campo_y_Mag_norm_c']==1:
@@ -1349,7 +1561,7 @@ for k in range(len(fnames_m)):
         plt.xlabel('Campo (A/m)')
         plt.ylabel('Magnetización (A/m)')
         plt.title('Ciclo de histéresis\n'+fnames_m[k][:-4])
-        plt.savefig(fnames_m[k][:-4]+ '_ciclo_histeresis.png',dpi=300)
+        plt.savefig(fnames_m[k][:-4]+ '_ciclo_histeresis.png',dpi=300,facecolor='w')
 
     Ciclos_eje_H.append(campo_m)
     Ciclos_eje_M.append(magnetizacion_m)
@@ -1360,8 +1572,9 @@ for k in range(len(fnames_m)):
     #Ajuste_cal_eje_H.append()
 
     #%% ASCII Ciclos
-    '''Exporto ciclos de histeresis en ascii: Tiempo (s) || Campo (A/m) || Magnetizacion (A/m)'''
- 
+    '''
+    Exporto ciclos de histeresis en ascii: Tiempo (s) || Campo (A/m) || Magnetizacion (A/m)
+    '''
     col0 = t_f_m - t_f_m[0]
     col1 = campo_m
     col2 = magnetizacion_m
@@ -1372,7 +1585,9 @@ for k in range(len(fnames_m)):
     ascii.write(ciclo_out,fnames_m[k][:-4] + '_Ciclo_de_histeresis.dat',
                 names=encabezado,overwrite=True,delimiter='\t',formats=formato)
     
-    '''Calculo Coercitividad (Hc) y Remanencia (Mr) '''
+    '''
+    Calculo Coercitividad (Hc) y Remanencia (Mr) 
+    '''
     m = magnetizacion_m
     h = campo_m
     Hc = []   
