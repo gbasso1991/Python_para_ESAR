@@ -52,7 +52,7 @@ for i,e in enumerate(campo_T):
 
 plt.xlim(left=0)
 plt.ylim(bottom=0)
-plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+plt.legend(loc='best')
 plt.xlabel('fem/f $(V\cdot s)$')
 plt.ylabel('Campo $(mT)$')
 plt.title('fem reducida en bobina captora vs. campo')
@@ -104,7 +104,7 @@ print(time.strftime("%d %b %Y - %H:%M:%S", time.localtime()))
 print('-'*40)
 print(f'''El factor de conversión de la fem reducida (V*s) al campo (T=V*s/m^2) para la bobina captora es:
           
-          F_Vs_to_T_captora = {F_Vs_to_T_captora:.2e} 1/m^2.
+          F_Vs_to_T_captora = {F_Vs_to_T_captora:.3e} 1/m^2.
 
 Recordar que esto se realizó con un amplificador de señal tal que 1 V == 1 A en su rango de linealidad (o en eso confiamos).''')
 

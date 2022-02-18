@@ -121,7 +121,7 @@ campo_top_to_bottom_3 = fem_3*F_Vs_to_T_captora.nominal_value/frec_3
 
 # Perfil de amplitud de campo B vs Z
 fig, ax = plt.subplots(figsize=(8,5))
-ax.plot(z_3,campo_top_to_bottom_3*1e3,'o-',label=f'Idc: {Idc_1} $A$\n$f$: {frec_0/1e3} kHz')
+ax.plot(z_3,campo_top_to_bottom_3*1e3,'o-',label=f'Idc: {Idc_3} $A$\n$f$: {frec_3/1e3} kHz')
 plt.axvspan(10,47.87,color='#B87333',alpha=0.6)
 plt.legend(loc='upper right')
 plt.grid()
@@ -152,7 +152,7 @@ z_4 = np.linspace(0,recorrido_4,num=len(fem_4)) #mm
 campo_bottom_to_top_4 = fem_4*F_Vs_to_T_captora.nominal_value/frec_4
 # Perfil de amplitud de campo B vs Z
 fig, ax = plt.subplots(figsize=(8,5))
-ax.plot(z_4,campo_bottom_to_top_4*1e3,'o-',label=f'Idc: {Idc_1} $A$\n$f$: {frec_0/1e3} kHz')
+ax.plot(z_4,campo_bottom_to_top_4*1e3,'o-',label=f'Idc: {Idc_4} $A$\n$f$: {frec_4/1e3} kHz')
 plt.axvspan(0,39,color='#B87333',alpha=0.5)
 plt.axvline(recorrido_4/2,0,1,linestyle='--',c='k')
 plt.legend(loc='upper right')
@@ -185,7 +185,7 @@ campo_edge_Am = campo_edge/(4*np.pi*1e-7)
 new_Am = new(z_new)/(4*np.pi*1e-7)
 
 fig, ax = plt.subplots(figsize=(8,6))
-ax.plot(z_4,campo_bottom_to_top_4_Am/1e3,'o-',label=f'Idc: {Idc_1} $A$\n$f$: {frec_0/1e3} kHz')
+ax.plot(z_4,campo_bottom_to_top_4_Am/1e3,'o-',label=f'Idc: {Idc_4} $A$\n$f$: {frec_4/1e3} kHz')
 ax.plot(z_new,new_Am/1e3,lw=0.9,label='Interpolacion')
 plt.axvspan(0,39,color='#B87333',alpha=0.4)
 
@@ -229,7 +229,7 @@ campo_top_to_bottom_5 = fem_5*F_Vs_to_T_captora.nominal_value/frec_5
 
 # Perfil de amplitud de campo B vs Z
 fig, ax = plt.subplots(figsize=(8,5))
-ax.plot(z_5,campo_top_to_bottom_5*1e3,'o-',label=f'Idc: {Idc_1} $A$\n$f$: {frec_0/1e3} kHz')
+ax.plot(z_5,campo_top_to_bottom_5*1e3,'o-',label=f'Idc: {Idc_4} $A$\n$f$: {frec_4/1e3} kHz')
 
 plt.legend(loc='upper right')
 plt.grid()
