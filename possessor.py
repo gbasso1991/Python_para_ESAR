@@ -5,8 +5,7 @@ possessor.py
 (https://gost1980s.bandcamp.com/)
 
 @author: Giuliano Andrés Basso
-Aplico modificaciones a Planet_caravan_20210419.py 
-11 Mayo 2021 
+Basado en Planet_caravan_20210419.py 
 
 Descripcion:
 Toma uno o varios archivos con formato de nombre:
@@ -40,19 +39,15 @@ tanto para la muestra como para el paramagneto de calibración.
 A partir de ahí se trabaja únicamente con estas restas y con las referencias 
 de muestra y de calibración que contienen la información del campo.
 
-Se filtra el ruido aislado de cada resta, las opciones son:
-    0) No filtrar
-    1) Filtro Actis: discriminando puntos donde la derivada (o menos la 
-    derivada) sea alta en comparación al resto de la señal, y sus entornos. 
-    En esas regiones se ajusta un polinomio con los puntos sin ruido a 
-    ambos lados de la zona ruidosa (se hace lo propio en las mismas regiones 
-    temporales que su señal para las respectivas referencias).
-    2) Con un filtro pasabajos de Fourier.
-
-Se recortan las señales para tener un número entero de períodos, y se
-omiten tanto el primer medio período como el último. De esta manera se
-evita el ruido que no pudo ser tratado adecuadamente al principio y al
+Las señales se levantan crudas, y se omiten tanto el primer medio período como el último. 
+De esta manera se evita el ruido que no pudo ser tratado adecuadamente al principio y al
 final de cada medida.
+
+A diferencia de los protocolos anteriores en Matlab, aca en lugar de los filtros que 
+se solian usar (en privamera OWON por ej), hacemos directamente una transformada 
+de Fourier y reconstruimos la señal a partir de sus armonicos impares. 
+Se muestra el analisis espectral de la muestra asi como tambien la señal
+reconstruida sobre la original para comparar. 
 
 Se promedia resta y referencia sobre todos los períodos y se integra.
 
@@ -133,9 +128,7 @@ def medida_cruda(path,delta_t):
     df.insert(loc=1,column='t',value=delta_t*(df['idx']-df['idx'][0]))
     #elimino columna de indice
     del df['idx'] 
-
     return df
-    
 
 '''Funcion: ajusta_seno(). Utiliza subrutina sinusoide()'''    
 def sinusoide(t,A,B,C,D):
@@ -148,7 +141,7 @@ def sinusoide(t,A,B,C,D):
 from scipy.optimize import curve_fit
 def ajusta_seno(t,v_r):
     '''
-    Calcula seeds y ajusta sinusoide via curve_fit
+    Calcula params de iniciacion y ajusta sinusoide via curve_fit
     Para calacular la frecuencia mide tiempo entre picos
     '''
     offset0 = v_r.mean() 
@@ -1111,7 +1104,7 @@ graficos={
     'Recorte_a_periodos_enteros_m': 1,
     'Campo_y_Mag_norm_c': 1,
     'Ciclos_HM_calibracion': 1,
-    'Campo_y_Mag_norm_m': 0,
+    'Campo_y_Mag_norm_m': 1,
     'Ciclo_HM_m': 1 ,
     'Ciclos_HM_m_todos': 1,
     'SAR_vs_Amplitud_Campo': 0 , #Sin usar
@@ -1125,27 +1118,23 @@ Analisis_de_Fourier = 1 # sobre las señales, imprime espectro de señal muestra
 #¿Quiere generar una imagen png con cada ciclo M vs. H obtenido? 
 # escriba guarda_imagen_ciclo=1. Caso contrario, deje 0 o cualquier otro valor.
 guarda_imagen_ciclo=1
-#Masa de nanoparticulas sobre volumen de FF en g/m^3, se utiliza para el cálculo de SAR'''
-concentracion = 10000 #1e4g/m3==10 g/l
-#Permeabilidad magnetica del vacio en N/A^2#    
-mu_0 = 4*np.pi*10**-7
-#Nombre del archivo de salida
+concentracion = 10000 #[concentracion]= g/m^3 (1e4 g/m^3 == 10 g/l) (Default = 10000 g/m^3)
+mu_0 = 4*np.pi*10**-7 #[mu_0]=N/A^2
 nombre_archivo_salida = 'Resultados_ESAR.dat'
-#Texto que identifica los archivos de fondo
+textofondo = '_fondo.txt' #Texto que identifica los archivos de fondo
+textocalibracion = '_cal.txt'#Texto que identifica los archivos de calibración 
 
-
-textofondo = '_fondo.txt' 
-#Texto que identifica los archivos de calibración 
-textocalibracion = '_cal.txt'
 #Calibracion de la bobina: cte que dimensionaliza al campo en A/m a partir de la calibracion
 #realizada sobre la bobina  del RF
-pendiente_HvsI = 43.18*79.77 
-ordenada_HvsI = 2.73*79.77  
-#Susceptibilidad del patrón de calibración
+pendiente_HvsI = 43.18*79.77 #[pendiente_HvsI]=[Oe/A]*[1000/4*pi]=1/m
+ordenada_HvsI = 2.73*79.77  #[ordenada_HvsI]=[Oe]*[1000/4*pi]=A/m
+#Densidad del patron
 rho_bulk_Gd2O3 = 7.41e3   #Densidad del Ox. de Gd en kg/m^3
-rho_patron_Gd2O3 = 2e3   # kg/m^3
+rho_patron_Gd2O3 = 2e3   # [rho_patron_Gd2O3]= kg/m^3
+#Susceptibilidad del patrón de calibración
 xi_bulk_Gd2O3_masa = (1.35e-4)*4*np.pi*1e-3  #emu*m/g/A = m^3/kg
-xi_patron_vol = xi_bulk_Gd2O3_masa*rho_patron_Gd2O3
+#Susceptibilidad del patrón de calibración
+xi_patron_vol = xi_bulk_Gd2O3_masa*rho_patron_Gd2O3 #[xi_patron_vol]= Adimensional
 #Defino listas para almacenar datos en cada iteracion
 Ciclos_eje_H = []
 Ciclos_eje_M = []
@@ -1264,7 +1253,7 @@ if todos!=1: #Selecciono 1 o + archivos de muestra
             fnames_f.append(fnames_m[i].replace('.txt',textofondo))
             path_c.append(directorio + '/' + fnames_c[i])
             path_f.append(directorio + '/' + fnames_f[i])
-    filenames = fnames_m+fnames_c+fnames_f  
+    filenames = fnames_m + fnames_c+fnames_f  
     
     if ciclos_en_descongelamiento!=0:
         #busco 1 solo archivo _cal y _fondo
@@ -1282,8 +1271,8 @@ if todos!=1: #Selecciono 1 o + archivos de muestra
                 fnames_f.append(fondo)
                 path_f.append(directorio + '/' + fondo)
                 m+=1  
-#%%Imprimo los archivos a procesar, clasificados m,c,f, y el num total.
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Imprimo los archivos a procesar, clasificados m,c,f, y el num total
 print('Directorio de trabajo: '+ directorio +'\n')
 print('Archivos de muestra en el directorio: ')
 for item in fnames_m:
@@ -1304,10 +1293,8 @@ if ciclos_en_descongelamiento==0:
 else: 
     print(fnames_f[0])    
     print('\nSon {} archivos.'.format(len(fnames_m)+2))
-'''
-Para detectar triadas de archivos (m,c,f) incompletas
-Ojo con esto, para medidas en calentamiento esto cambia
-'''
+
+# Para detectar triadas de archivos (m,c,f) incompletas
 if ciclos_en_descongelamiento==0:
     if len(fnames_c)<len(fnames_m):
         raise Exception(f'Archivo de calibracion faltante\nArchivos muestra: {len(fnames_m)}\nArchivos calibracion: {len(fnames_c)} ')
@@ -1320,7 +1307,7 @@ if ciclos_en_descongelamiento==0:
 #%% Params del nombre
 '''
 Parámetros de la medida a partir de nombre del archivo 
-de muestra: 'xxxkHz_yyydA_zzzMss_nombre.txt
+de muestra: 'xxxkHz_yyydA_zzzMss_*.txt
 '''
 frec_nombre=[] #Frec del nombre del archivo. Luego comparo con frec ajustada
 Idc = []       #Internal direct current en el generador de RF
@@ -1356,7 +1343,7 @@ for k in range(len(fnames_m)):
     df_c['residuos'] = df_c['v_r'] - df_c['v_r_ajustada']
     df_f['residuos'] = df_f['v_r'] - df_f['v_r_ajustada']
 
-    '''Comparacion de señales y ajustes'''
+    # Comparacion de señales y ajustes
     if graficos['Referencias_y_ajustes']==1:
         fig , ax = plt.subplots(3,1, figsize=(8,9),sharex='all')
         
@@ -1375,10 +1362,7 @@ for k in range(len(fnames_m)):
         fig.suptitle('Comparacion señal de referencias y ajustes',fontsize=20)
         plt.tight_layout()
         
-    ''' 
-    Cortafuegos: Si la diferencia entre frecuencias es muy gde 
-                                        => error'''
-    #Agregar iterador sobre frec_nombre
+    # Cortafuegos: Si la diferencia entre frecuencias es muy grande => error'''
     text_error ='''
     Incompatibilidad de frecuencias en: 
             {:s}\n
@@ -1396,9 +1380,9 @@ for k in range(len(fnames_m)):
     else:
         pass
 
-    '''Ejecuto la funcion resta_inter() '''
-    #Muestra
-    t_m = df_m['t'].to_numpy()
+    # Ejecuto la funcion resta_inter() 
+    
+    t_m = df_m['t'].to_numpy() #Muestra
     v_m = df_m['v'].to_numpy()
     v_r_m = df_m['v_r'].to_numpy()
 
@@ -1406,9 +1390,8 @@ for k in range(len(fnames_m)):
         Resta_m , t_m_1 , v_r_m_1 , figura_m = resta_inter(t_m,v_m,v_r_m,fase_m,frec_m,offset_m,df_f['t'],df_f['v'],df_f['v_r'],fase_f,frec_f,'muestra')
     else:
         Resta_m , t_m_1 , v_r_m_1 , figura_m = resta_inter(t_m,v_m,v_r_m,fase_m,frec_m,offset_m,df_f['t'],df_f['v'],df_f['v_r'],fase_f,frec_f,0)
-
-    #Calibracion
-    t_c = df_c['t'].to_numpy()
+    
+    t_c = df_c['t'].to_numpy() #Calibracion
     v_c = df_c['v'].to_numpy()
     v_r_c = df_c['v_r'].to_numpy()
 
@@ -1417,7 +1400,7 @@ for k in range(len(fnames_m)):
     else:
         Resta_c , t_c_1 , v_r_c_1 , figura_c = resta_inter(t_c,v_c,v_r_c,fase_c,frec_c,offset_c,df_f['t'],df_f['v'],df_f['v_r'],fase_f,frec_f,0)
 
-    '''Grafico las restas'''
+    # Grafico las restas 
     if graficos['Resta_mf_y_cf']==1:
         plt.figure(figsize=(10,5))
         plt.plot(t_m_1,Resta_m,'.-',lw=0.9,label='Muestra - fondo')
@@ -1431,9 +1414,8 @@ for k in range(len(fnames_m)):
     else:
         pass
 
-    '''
-    Ejecuto filtrando_ruido()
-    '''
+    # Ejecuto filtrando_ruido()
+ 
     #Muestra
     if graficos['Filtrado_muestra']==1:
         t_m_2, v_r_m_2, Resta_m_2, figura_m_2 = filtrando_ruido(t_m_1,v_r_m_1,Resta_m,filtrarmuestra,'muestra')
@@ -1447,7 +1429,7 @@ for k in range(len(fnames_m)):
         t_c_2, v_r_c_2 , Resta_c_2, figura_c_2 = filtrando_ruido(t_c_1,v_r_c_1,Resta_c,filtrarcal,0)
 
 
-    '''Diferencia entre señal sin ruido y señal. Guarda el peor valor.'''
+    # Diferencia entre señal sin ruido y señal. Guarda el peor valor 
     interpolador_m = sc.interpolate.interp1d(t_m_1,Resta_m,'slinear')
     dif_resta_m = Resta_m_2 - interpolador_m(t_m_2)
 
@@ -1456,7 +1438,7 @@ for k in range(len(fnames_m)):
 
     peor_diferencia=max([np.mean(abs(dif_resta_m))/max(Resta_m),np.mean(abs(dif_resta_c))/max(Resta_c)])
 
-    '''Aplico recorte() para tener N periodos enteros'''
+    # Aplico recorte() para tener N periodos enteros 
     #Muestra
     if graficos['Recorte_a_periodos_enteros_m']==1:
         t_m_3, v_r_m_3 , Resta_m_3, N_ciclos_m, figura_m_3 = recorte(t_m_2,v_r_m_2,Resta_m_2,frec_m,'muestra')
@@ -1468,77 +1450,56 @@ for k in range(len(fnames_m)):
     else:
         t_c_3, v_r_c_3 , Resta_c_3, N_ciclos_c, figura_c_3 = recorte(t_c_2,v_r_c_2,Resta_c_2,frec_c,0)
 
-    '''
-    Ultimo ajuste sobre las señales de referencia (muestra y  cal)
-    '''
+    #Ultimo ajuste sobre las señales de referencia (muestra y  cal) 
     _,_, frec_final_c,_ = ajusta_seno(t_c_3,v_r_c_3)
     _,_, frec_final_m,_ = ajusta_seno(t_m_3,v_r_m_3)
-    '''
-    Ejecuto promediado_ciclos()
-    '''
-    t_f_c , fem_campo_c , R_c , delta_t_c = promediado_ciclos(t_c_3,v_r_c_3,Resta_c_3,frec_final_c,N_ciclos_c)
-    '''
-    Integro los ciclos: calcula sumas acumuladas y convierte a campo y magnetizacion
-    Cte que dimensionaliza al campo en A/m a partir de la calibracion
-    realizada sobre la bobina del RF'''
-    C_norm_campo=Idc[k]*pendiente_HvsI+ordenada_HvsI
-  
-    '''
-    Integral de la fem inducida, proporcional al Campo mas una contante
-    '''
-    campo_ua0_c = delta_t_c*cumulative_trapezoid(fem_campo_c,initial=0)
-    #Campo en volt*segundo, falta llevar a ampere/metro.
-    '''
-    Resto offset
-    '''
-    campo_ua_c = campo_ua0_c - np.mean(campo_ua0_c)
-    '''
-    Doy unidades al campo 
-    '''
-    campo_c  = (campo_ua_c/max(campo_ua_c))*C_norm_campo
-    '''
-    Integral de la fem inducida  (c/ fondo restado), es proporcional a
-    la magnetizacion mas una constante
-    '''
-    magnetizacion_ua0_c = delta_t_c*cumulative_trapezoid(R_c,initial=0)
-    #Magnetizacion en volts*segundo, falta llevar a ampere/metro.
-    '''
-    Resto offset tmb
-    '''
-    magnetizacion_ua_c = magnetizacion_ua0_c-np.mean(magnetizacion_ua0_c)
-    '''
-    Ajusta una recta al ciclo de la calibración
-    '''
-    pendiente , ordenada = np.polyfit(campo_c,magnetizacion_ua_c,1)
-    polaridad = np.sign(pendiente) 
 
-    pendiente = pendiente*polaridad
-    magnetizacion_ua_c = magnetizacion_ua_c*polaridad 
+    # Ejecuto promediado_ciclos() en Calibracion
+    t_f_c , fem_campo_c , R_c , delta_t_c = promediado_ciclos(t_c_3,v_r_c_3,Resta_c_3,frec_final_c,N_ciclos_c)
+    
+    ############################################################################################################
+    ## Integro los ciclos: calcula sumas acumuladas y convierte a campo y magnetizacion
+    #Cte que dimensionaliza al campo en A/m a partir de la calibracion realizada sobre la bobina del RF
+    C_norm_campo=Idc[k]*pendiente_HvsI+ordenada_HvsI #[C_norm_campo]=[A]*[1/m]+[A/m]=A/m
+    #Integral de la fem inducida, proporcional al Campo mas una contante
+    campo_ua0_c = delta_t_c*cumulative_trapezoid(fem_campo_c,initial=0) #[campo_ua0_c]=V*s
+    campo_ua_c = campo_ua0_c - np.mean(campo_ua0_c) #Resto offset
+    campo_c  = (campo_ua_c/max(campo_ua_c))*C_norm_campo #[campo_c]=A/m 
+    
+    # Integral de la fem inducida  (c/ fondo restado), es proporcional a la magnetizacion mas una constante
+    magnetizacion_ua0_c = delta_t_c*cumulative_trapezoid(R_c,initial=0)#[magnetizacion_ua0_c]=V*s
+    magnetizacion_ua_c = magnetizacion_ua0_c-np.mean(magnetizacion_ua0_c)#Resto offset
+    #Ajuste Lineal sobre ciclo de la calibración
+    pendiente , ordenada = np.polyfit(campo_c,magnetizacion_ua_c,1) #[pendiente]=m*V*s/A  [ordenada]=V*s
+    polaridad = np.sign(pendiente) # +/-1
+    pendiente = pendiente*polaridad # Para que sea positiva
+    magnetizacion_ua_c = magnetizacion_ua_c*polaridad  #[magnetizacion_ua_c]=V*s
     
 #%% Fourier
-    '''
-    Analisis de Fourier sobre las señales
-    '''
+    #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
         armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.04,frec_limite=5e6,name=fnames_m[k])
 
+        # Guardo Graficos
         fig_fourier.savefig('Analisis_Fourier_señales_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
         fig2_fourier.savefig('Reconstruccion_impar_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
         #plt.close(fig='all')   #cierro todas las figuras
         
-        #Reemplazo señal recortada con la filtrada en armonicos impares en muestra y calibracion usando muestra_rec_impar en lugar de Resta_m_3 y cal_rec_impar en lugar de Resta_c_3
-
+        #Reemplazo señal recortada con la filtrada en armonicos impares en muestra y calibracion: 
+            # Resta_m_3 ==> muestra_rec_impar 
+            # Resta_c_3 ==> cal_rec_impar  
         t_f_m , fem_campo_m , R_m , delta_t_m = promediado_ciclos(t_m_3,v_r_m_3,muestra_rec_impar,frec_final_m,N_ciclos_m)
-        
         t_f_c , fem_campo_c , R_c , delta_t_c = promediado_ciclos(t_c_3,v_r_c_3,cal_rec_impar,frec_final_c,N_ciclos_c)
+        
         magnetizacion_ua0_c = delta_t_c*cumulative_trapezoid(R_c,initial=0)
         magnetizacion_ua_c = magnetizacion_ua0_c-np.mean(magnetizacion_ua0_c)
     else:
-        #Sin analisis de Fourier, solamente acomodo la polaridad de la señal de la muestra. La señal de la calibracion queda igual que antes  
+        #Sin analisis de Fourier, solamente acomodo la polaridad de la señal de la muestra. 
+        # La señal de la calibracion no se modifica 
         t_f_m , fem_campo_m , R_m , delta_t_m = promediado_ciclos(t_m_3,v_r_m_3,Resta_m_3*polaridad,frec_final_m,N_ciclos_m)
 
-#%%
-    if graficos['Campo_y_Mag_norm_c']==1:
+#%% 
+    if graficos['Campo_y_Mag_norm_c']==1: # CALIBRACION: H(t) y M(t) normalizados 
         fig , ax =plt.subplots()    
         ax.plot(t_f_c,campo_c/max(campo_c),label='Campo')
         ax.plot(t_f_c,magnetizacion_ua_c/max(magnetizacion_ua_c),label='Magnetización')
@@ -1546,69 +1507,55 @@ for k in range(len(fnames_m)):
         plt.grid()
         plt.xlabel('t (s)')
         plt.title('Campo y magnetización normalizados del paramagneto\n'+ fnames_c[k][:-4])
-    if graficos['Ciclos_HM_calibracion']==1:
+    
+    if graficos['Ciclos_HM_calibracion']==1: #Ciclo del paramagneto en u.a. (V*s), y Ajuste Lineal 
         fig, ax = plt.subplots()
         ax.plot(campo_c,magnetizacion_ua_c,label='Calibración')
         ax.plot(campo_c, ordenada + pendiente*campo_c,label='Ajuste lineal')
         plt.grid()
         plt.legend(loc='best')
-        plt.xlabel('H (Oe)')
+        plt.xlabel('H $(A/m)$')
+        plt.ylabel('M $V\cdot s$')
         plt.title('Ciclo del paramagneto\n'+ fnames_c[k][:-4])
 
-    '''
-    Calibración para pasar la magnetización a A/m
-    '''
-    calibracion=xi_patron_vol/pendiente
-    '''
-    Doy unidades a la magnetizacion de calibracion, ie, al paramagneto
-    '''
-    magnetizacion_c = calibracion*magnetizacion_ua_c
+    #Calibración para pasar la magnetización de m*V*s/A a A/m
+    calibracion=xi_patron_vol/pendiente #[calibracion]=A/m*V*s
+    # Doy unidades a la magnetizacion de calibracion, ie, al paramagneto
+    magnetizacion_c = calibracion*magnetizacion_ua_c #[magnetizacion_c]=A/m
     
-    '''
-    Integro los ciclos de Muestra: 
-    Calcula sumas acumuladas y convierte a campo y magnetizacion
-    '''
-    campo_ua0_m = delta_t_m*cumulative_trapezoid(fem_campo_m,initial=0)
+    #Integro los ciclos de Muestra: Calcula sumas acumuladas y convierte a campo y magnetizacion
+    # Campo H(t)
+    campo_ua0_m = delta_t_m*cumulative_trapezoid(fem_campo_m,initial=0) #V*s
     campo_ua_m = campo_ua0_m - np.mean(campo_ua0_m)
+    campo_m = (campo_ua_m/max(campo_ua_m))*C_norm_campo #[campo_m]=A/m
 
     magnetizacion_ua0_m = delta_t_m*cumulative_trapezoid(R_m,initial=0)
     magnetizacion_ua_m = magnetizacion_ua0_m - np.mean(magnetizacion_ua0_m)
-    magnetizacion_ua_m = magnetizacion_ua_m#*polaridad No hace falta porque lo hace dentro de fourier_señales
-    '''
-    Da unidades de A/m a la magnetizacion final utilizando la
-    proporcionalidad obtenida en la calibracion. Este paso podría
-    ser realizado directamente sobre un valor de calibracion
-    provisto por el usuario, de calibraciones anteriores.
-    '''
-    magnetizacion_m=calibracion*magnetizacion_ua_m
-
-    if graficos['Campo_y_Mag_norm_m']==1:
+    magnetizacion_m=calibracion*magnetizacion_ua_m #[magnetizacion_m]=A/m
+    #La polaridad se corrigió dentro de fourier_señales() o promediado_ciclos()
+    
+    if graficos['Campo_y_Mag_norm_m']==1: #MUESTRA: H(t) y M(t) normalizados 
         fig , ax =plt.subplots()    
         ax.plot(t_f_m,campo_ua_m/max(campo_ua_m),label='Campo')
         ax.plot(t_f_m,magnetizacion_ua_m/max(magnetizacion_ua_m),label='Magnetización')
-        
         plt.legend(loc='best')
         plt.grid()
         plt.xlabel('t (s)')
         plt.title('Campo y magnetización normalizados de la muestra\n'+fnames_m[k][:-4])
     
-    if graficos['Ciclo_HM_m']==1:
+    if graficos['Ciclo_HM_m']==1: #Ciclo de histeresis en u.a. (V*s), y Ajuste Lineal 
         fig , ax =plt.subplots()    
-        ax.plot(campo_ua_m/max(campo_ua_m),magnetizacion_ua_m/max(magnetizacion_ua_m),label='Muestra')
-        
+        ax.plot(campo_m,magnetizacion_m,label='Muestra')
         plt.legend(loc='best')
         plt.grid()
-        plt.xlabel('t (s)')
-        plt.title('Ciclo de histéresis normalizado de la muestra\n'+fnames_m[k][:-4])
+        plt.xlabel('H $(A/m)$')
+        plt.ylabel('M $(A/m)$')
+        plt.title('Ciclo de histéresis de la muestra\n'+fnames_m[k][:-4])
 
-    '''Campo y magnetizacion finales '''
-    campo_m = (campo_ua_m/max(campo_ua_m))*C_norm_campo
-    
-    '''Grafica el ciclo momentáneamente para guardar una imagen'''
-    if guarda_imagen_ciclo == 1:
+    if guarda_imagen_ciclo == 1: #Guardo ciclo de histeresis M(H) individual
         fig , ax =plt.subplots()    
-        ax.plot(campo_m,magnetizacion_ua_m,label='Muestra')
-        ax.plot(campo_c,magnetizacion_ua_c,label='Paramagneto')
+        ax.plot(campo_m,magnetizacion_m,label='Muestra')
+        ax.plot(campo_c,magnetizacion_c,label='Paramagneto')
         plt.legend(loc='best')
         plt.grid()
         plt.xlabel('Campo (A/m)')
@@ -1638,9 +1585,7 @@ for k in range(len(fnames_m)):
     ascii.write(ciclo_out,fnames_m[k][:-4] + '_Ciclo_de_histeresis.dat',
                 names=encabezado,overwrite=True,delimiter='\t',formats=formato)
     
-    '''
-    Calculo Coercitividad (Hc) y Remanencia (Mr) 
-    '''
+    #Calculo Coercitividad (Hc) y Remanencia (Mr) 
     m = magnetizacion_m
     h = campo_m
     Hc = []   
@@ -1652,40 +1597,30 @@ for k in range(len(fnames_m)):
             
         if((h[z]>0 and h[z+1]<0) or (h[z]<0 and h[z+1]>0)):  #H coercitivo
             Mr.append(abs(m[z] - h[z]*(m[z+1] - m[z])/(h[z+1]-h[z])))
-            
+
     Hc_mean = np.mean(Hc)
     Hc_mean_kAm = Hc_mean/1000
     Hc_error = np.std(Hc)
-    
     Mr_mean = np.mean(Mr)
     Mr_mean_kAm = Mr_mean/1000
     Mr_error = np.std(Mr)
-    
     print(f'Hc = {Hc_mean:.2f} (+/-) {Hc_error:.2f} (A/m)')
     print(f'Mr = {Mr_mean:.2f} (+/-) {Mr_error:.2f} (A/m)')
-
-#%% SAR    
-    '''Calculo de SAR''' 
-    '''
-    Determinacion de areas: armo vector aux desplazado a valores positivos
-    '''
+#%% Calculo de SAR
+    #P/ la determinacion de areas armo vector aux desplazado a valores positivos
     magnetizacion_m_des = magnetizacion_m + 2*abs(min(magnetizacion_m))
     magnetizacion_c_des = magnetizacion_c + 2*abs(min(magnetizacion_c))
-    '''
-    Area del lazo
-    '''
+    
     Area_ciclo = abs(trapezoid(magnetizacion_m_des,campo_m)) 
-    print('Archivo: %s' %fnames_m[k])
-    print('Area del ciclo: %f' %Area_ciclo)
-    '''
-    Area de la calibracion: es la incerteza en el area del lazo
-    '''
-    Area_cal = abs(trapezoid(magnetizacion_c_des,campo_c))
-    '''
-    Calculo de potencia disipada SAR
-    '''
-    sar = mu_0*Area_ciclo*frec_final_m/(concentracion)  
-    #para pasar de concentracion en g/l a g/m^3 debo considerar factor 1000 
+    print(f'Archivo: {fnames_m[k]:s}')
+    print(f'Area del ciclo de histéresis: {Area_ciclo:.2f} (A/m)^2')
+    
+    # Asigno el area del ciclo del paramagneto (idealmente es una recta) 
+    # como la incerteza en el area del ciclo de la muestra
+    Area_cal = abs(trapezoid(magnetizacion_c_des,campo_c)) #[Area_cal]=(A/m)^2
+    
+    #Calculo de potencia disipada (SAR)
+    sar = mu_0*Area_ciclo*frec_final_m/(concentracion)  #[sar]=[N/A^2]*[A^2/m^2]*[1/s]*[m^3/g]=W/g
     error_sar=100*abs(Area_cal)/abs(Area_ciclo) #porcentual
     print('''SAR: {:.2f} (W/g), incerteza del {:.2f}%
     Concentración: {} g/m^3
