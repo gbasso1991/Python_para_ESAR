@@ -673,6 +673,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     amplitudes_r_c = g_r_c[indices_r_c]
     fases_r_c = fase_r_c[indices_r_c]
 #Imprimo tabla 
+    print(f'Archivo: {fnames_m[k]:s}')
     print('''Espectro de la señal de referencia:\nFrecuencia (Hz) - Intensidad rel - Fase (rad)''')
     for i in range(len(indices_r)):
         print(f'{armonicos_r[i]:<10.2f}    {amplitudes_r[i]/max(amplitudes_r):>12.2f}    {fases_r[i]:>12.4f}')
@@ -1100,8 +1101,8 @@ graficos={
     'Resta_mf_y_cf':0,
     'Filtrado_calibracion': 0,
     'Filtrado_muestra': 0,
-    'Recorte_a_periodos_enteros_c': 1,
-    'Recorte_a_periodos_enteros_m': 1,
+    'Recorte_a_periodos_enteros_c': 0,
+    'Recorte_a_periodos_enteros_m': 0,
     'Campo_y_Mag_norm_c': 1,
     'Ciclos_HM_calibracion': 1,
     'Campo_y_Mag_norm_m': 1,
@@ -1140,6 +1141,8 @@ Ciclos_eje_H = []
 Ciclos_eje_M = []
 Ciclos_eje_H_cal = []
 Ciclos_eje_M_cal = []
+Ciclos_eje_H_cal_ua = []
+Ciclos_eje_M_cal_ua = []
 Pendiente_cal = []
 Ordenada_cal = []
 Frecuencia_muestra_kHz = []
@@ -1271,7 +1274,7 @@ if todos!=1: #Selecciono 1 o + archivos de muestra
                 fnames_f.append(fondo)
                 path_f.append(directorio + '/' + fondo)
                 m+=1  
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Imprimo los archivos a procesar, clasificados m,c,f, y el num total
 print('Directorio de trabajo: '+ directorio +'\n')
 print('Archivos de muestra en el directorio: ')
@@ -1293,7 +1296,7 @@ if ciclos_en_descongelamiento==0:
 else: 
     print(fnames_f[0])    
     print('\nSon {} archivos.'.format(len(fnames_m)+2))
-
+print('-'*50)
 # Para detectar triadas de archivos (m,c,f) incompletas
 if ciclos_en_descongelamiento==0:
     if len(fnames_c)<len(fnames_m):
@@ -1475,7 +1478,7 @@ for k in range(len(fnames_m)):
     pendiente = pendiente*polaridad # Para que sea positiva
     magnetizacion_ua_c = magnetizacion_ua_c*polaridad  #[magnetizacion_ua_c]=V*s
     
-#%% Fourier
+    # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
         armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.04,frec_limite=5e6,name=fnames_m[k])
@@ -1498,7 +1501,7 @@ for k in range(len(fnames_m)):
         # La señal de la calibracion no se modifica 
         t_f_m , fem_campo_m , R_m , delta_t_m = promediado_ciclos(t_m_3,v_r_m_3,Resta_m_3*polaridad,frec_final_m,N_ciclos_m)
 
-#%% 
+     
     if graficos['Campo_y_Mag_norm_c']==1: # CALIBRACION: H(t) y M(t) normalizados 
         fig , ax =plt.subplots()    
         ax.plot(t_f_c,campo_c/max(campo_c),label='Campo')
@@ -1507,17 +1510,18 @@ for k in range(len(fnames_m)):
         plt.grid()
         plt.xlabel('t (s)')
         plt.title('Campo y magnetización normalizados del paramagneto\n'+ fnames_c[k][:-4])
-    
+  #%%  
     if graficos['Ciclos_HM_calibracion']==1: #Ciclo del paramagneto en u.a. (V*s), y Ajuste Lineal 
         fig, ax = plt.subplots()
         ax.plot(campo_c,magnetizacion_ua_c,label='Calibración')
         ax.plot(campo_c, ordenada + pendiente*campo_c,label='Ajuste lineal')
+        plt.text(.6,.25,f'$M = m\cdot H + n$\nm = {pendiente:.1e} $V\cdot s\cdot m/A$\nn = {ordenada:.1e} $V \cdot s$',bbox=dict(facecolor='tab:orange',alpha=0.7),transform=ax.transAxes)
         plt.grid()
         plt.legend(loc='best')
         plt.xlabel('H $(A/m)$')
-        plt.ylabel('M $V\cdot s$')
+        plt.ylabel('M ($V\cdot s$)')
         plt.title('Ciclo del paramagneto\n'+ fnames_c[k][:-4])
-
+#%%
     #Calibración para pasar la magnetización de m*V*s/A a A/m
     calibracion=xi_patron_vol/pendiente #[calibracion]=A/m*V*s
     # Doy unidades a la magnetizacion de calibracion, ie, al paramagneto
@@ -1562,16 +1566,18 @@ for k in range(len(fnames_m)):
         plt.ylabel('Magnetización (A/m)')
         plt.title('Ciclo de histéresis\n'+fnames_m[k][:-4])
         plt.savefig(fnames_m[k][:-4]+ '_ciclo_histeresis.png',dpi=300,facecolor='w')
-
+        
     Ciclos_eje_H.append(campo_m)
     Ciclos_eje_M.append(magnetizacion_m)
     Ciclos_eje_H_cal.append(campo_c)
     Ciclos_eje_M_cal.append(magnetizacion_c)
+    Ciclos_eje_M_cal_ua.append(magnetizacion_ua_c)
+    
     Pendiente_cal.append(pendiente)
     Ordenada_cal.append(ordenada)
     #Ajuste_cal_eje_H.append()
 
-    #%% ASCII Ciclos
+    #% ASCII Ciclos
     '''
     Exporto ciclos de histeresis en ascii: Tiempo (s) || Campo (A/m) || Magnetizacion (A/m)
     '''
@@ -1604,28 +1610,28 @@ for k in range(len(fnames_m)):
     Mr_mean = np.mean(Mr)
     Mr_mean_kAm = Mr_mean/1000
     Mr_error = np.std(Mr)
-    print(f'Hc = {Hc_mean:.2f} (+/-) {Hc_error:.2f} (A/m)')
+    print(f'\nHc = {Hc_mean:.2f} (+/-) {Hc_error:.2f} (A/m)')
     print(f'Mr = {Mr_mean:.2f} (+/-) {Mr_error:.2f} (A/m)')
-#%% Calculo de SAR
+    #% Calculo de SAR
     #P/ la determinacion de areas armo vector aux desplazado a valores positivos
     magnetizacion_m_des = magnetizacion_m + 2*abs(min(magnetizacion_m))
     magnetizacion_c_des = magnetizacion_c + 2*abs(min(magnetizacion_c))
     
     Area_ciclo = abs(trapezoid(magnetizacion_m_des,campo_m)) 
-    print(f'Archivo: {fnames_m[k]:s}')
+    
     print(f'Area del ciclo de histéresis: {Area_ciclo:.2f} (A/m)^2')
     
     # Asigno el area del ciclo del paramagneto (idealmente es una recta) 
     # como la incerteza en el area del ciclo de la muestra
     Area_cal = abs(trapezoid(magnetizacion_c_des,campo_c)) #[Area_cal]=(A/m)^2
-    
+    print(f'Area del ciclo del paramagneto: {Area_cal:.2f} (A/m)^2')
+     
     #Calculo de potencia disipada (SAR)
     sar = mu_0*Area_ciclo*frec_final_m/(concentracion)  #[sar]=[N/A^2]*[A^2/m^2]*[1/s]*[m^3/g]=W/g
     error_sar=100*abs(Area_cal)/abs(Area_ciclo) #porcentual
-    print('''SAR: {:.2f} (W/g), incerteza del {:.2f}%
-    Concentración: {} g/m^3
-    '''.format(sar,error_sar,concentracion))
-
+    print(f'\nSAR: {sar:.2f} (W/g), incerteza del {error_sar:.2f}%')
+    print(f'Concentracion: {concentracion} g/m^3')
+    print('-'*50)
     '''Salidas importantes: lleno las listas. 
     Tienen tantos elmentos como archivos seleccionados'''    
     
@@ -1643,13 +1649,14 @@ for k in range(len(fnames_m)):
     Remanencia_kAm.append(Mr_mean/1000)
     '''Peor diferencia porcentual'''
     Peor_diferencia.append(peor_diferencia*100)
+    plt.close('all')
 ###Problemas aca
-
-#%% Plot Ciclos
+#%%
+# Plot Ciclos
 if graficos['Ciclos_HM_m_todos']==1:
     fig = plt.figure(figsize=(14,8),constrained_layout=True)
     ax = fig.add_subplot(1,1,1)
-    axin = ax.inset_axes([0.60,0.05, 0.35,0.35])
+    axin = ax.inset_axes([0.60,0.08, 0.35,0.38])
     axin.set_title('Calibración',loc='center')
     #axin.yaxis.tick_right()
     plt.setp(axin.get_yticklabels(),visible=True)
@@ -1661,8 +1668,11 @@ if graficos['Ciclos_HM_m_todos']==1:
     
     for i in range(len(fnames_m)):      
         plt.plot(Ciclos_eje_H[i],Ciclos_eje_M[i],label=f'{fnames_m[i][:-4]}\n$SAR:$ {SAR[i]:.1f} $W/g$')
-        axin.plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal[i])
-
+        axin.plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal_ua[i])
+        axin.set_ylabel('M $(V\cdot s)$')
+        axin.set_xlabel('H $(A/m)$')
+        #.plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal[i],c='r')
+plt.text(1.02,0.1,f'Pendiente de calibracion promedio:\n {np.mean(Pendiente_cal):.2e} +/- {np.std(Pendiente_cal):.2e} $V\cdot s \cdot m/A$',bbox=dict(color='tab:orange',alpha=0.8),transform=ax.transAxes)
 plt.legend(loc='upper left',bbox_to_anchor=(1.02,0.5,0.4,0.5))
 plt.grid()
 plt.xlabel('Campo (A/m)',fontsize=15)
@@ -1671,7 +1681,8 @@ plt.title(fecha_graf,loc='left',y=0,fontsize=13)
 plt.suptitle('Ciclos de histéresis',fontsize=30)
 plt.savefig('Ciclos_histeresis_'+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
 #plt.close(fig='all')   #cierro todas las figuras 
-#%% ASCII de salida
+    #%ASCII de salida
+#%%
 '''
 Archivo de salida: utilizo las listas definidas
 '''   
