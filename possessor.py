@@ -85,7 +85,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import pandas as pd
 import scipy as sc
-
+from uncertainties import ufloat, unumpy
 from scipy.signal import find_peaks 
 from scipy.integrate import cumulative_trapezoid, trapezoid
 
@@ -540,7 +540,7 @@ def promediado_ciclos(t,v_r,v,frecuencia,N_ciclos):
     delta_t = (t_f[-1]-t_f[0])/len(t_f)
     return t_f , v_r_f, v_f , delta_t
 
-def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limite,name):
+def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limite_m,frec_limite_cal,name):
     '''
     Toma señales de muestra, calibracion y referencia obtieniendo via fft frecuencias y fases.
     frec_muestreo = sample rate 1/delta_t (tipicamente 1e8 o 5e7).    
@@ -589,7 +589,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     f = rfftfreq(N,d=delta_t) #obtengo la mitad de los puntos, porque uso rfft
     f_HF = f.copy() 
     #f_HF = f_HF[np.nonzero(f>=frec_limite)] #aca estan el resto 
-    f = f[np.nonzero(f<=frec_limite)] #limito frecuencias 
+    f = f[np.nonzero(f<=frec_limite_m)] #limito frecuencias 
     g_aux = fft(y,norm='forward') 
     #“forward” applies the 1/n factor on the forward tranform
     g = abs(g_aux)  #magnitud    
@@ -598,25 +598,25 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     #Idem p/ calibracion
     f_c = rfftfreq(N_c, d=delta_t)
     f_c_HF = f_c.copy()
-    f_c = f_c[np.nonzero(f_c<=frec_limite)]
+    f_c = f_c[np.nonzero(f_c<=frec_limite_cal)]
     g_c_aux = fft(y_c,norm='forward') 
     g_c = abs(g_c_aux)
     fase_c= np.angle(g_c_aux)
     
     #Idem p/ Referencia
     f_r = rfftfreq(N_r_m, d=delta_t)
-    f_r = f_r[np.nonzero(f_r<=frec_limite)]
+    f_r = f_r[np.nonzero(f_r<=frec_limite_m)]
     g_r_aux = fft(y_r,norm='forward')
     g_r = abs(g_r_aux)
     fase_r = np.angle(g_r_aux)
     #y para ref de calibracion
     f_r_c = rfftfreq(N_r_c, d=delta_t)
-    f_r_c = f_r_c[np.nonzero(f_r_c<=frec_limite)]
+    f_r_c = f_r_c[np.nonzero(f_r_c<=frec_limite_cal)]
     g_r_c_aux = fft(y_r_c,norm='forward')
     g_r_c = abs(g_r_c_aux)
     fase_r_c = np.angle(g_r_c_aux)
      
-    #Recorto vectores hasta frec_limite
+    #Recorto vectores hasta frec_limite/_cal
     g_HF = g.copy() 
     g_c_HF = g_c.copy()
     #g_HF = g_HF[np.nonzero(f>=frec_limite)]#magnitud de HF
@@ -625,9 +625,9 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     g_r = np.resize(g_r,len(f_r))
     g_r_c = np.resize(g_r_c,len(f_r_c))
     g_HF = np.resize(g_HF,len(f_HF))
-    g_HF[np.argwhere(f_HF<=frec_limite)]=0 #Anulo LF
+    g_HF[np.argwhere(f_HF<=frec_limite_m)]=0 #Anulo LF
     g_c_HF = np.resize(g_c_HF,len(f_c_HF))
-    g_c_HF[np.argwhere(f_c_HF<=frec_limite)]=0 #Anulo LF
+    g_c_HF[np.argwhere(f_c_HF<=frec_limite_cal)]=0 #Anulo LF
 
 #Obtengo frecuencias cuya intensidad relativa supera umbral dado por el filtro
     indices,_=find_peaks(abs(g),threshold=max(g)*filtro)
@@ -673,7 +673,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     amplitudes_r_c = g_r_c[indices_r_c]
     fases_r_c = fase_r_c[indices_r_c]
 #Imprimo tabla 
-    print(f'Archivo: {fnames_m[k]:s}')
+    print(f'{k+1}/{len(fnames_m)}\nArchivo: {fnames_m[k]:s}')
     print('''Espectro de la señal de referencia:\nFrecuencia (Hz) - Intensidad rel - Fase (rad)''')
     for i in range(len(indices_r)):
         print(f'{armonicos_r[i]:<10.2f}    {amplitudes_r[i]/max(amplitudes_r):>12.2f}    {fases_r[i]:>12.4f}')
@@ -691,7 +691,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     indx_impar = []
     indx_par=[]
 
-    for n in range(int(frec_limite//int(armonicos[0]))):
+    for n in range(int(frec_limite_m//int(armonicos[0]))):
         frec_multip.append((2*n+1)*armonicos[0]/1000)
         if (2*n+1)*indices[0]<=len(f):
             indx_impar.append((2*n+1)*indices[0])
@@ -700,7 +700,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     frec_multip_c = []
     indx_impar_c = []
     indx_par_c=[]
-    for n in range(int(frec_limite//int(armonicos_c[0]))):
+    for n in range(int(frec_limite_cal//int(armonicos_c[0]))):
         frec_multip_c.append((2*n+1)*armonicos_c[0]/1000)
         if (2*n+1)*indices_c[0]<=len(f_c):
             indx_impar_c.append((2*n+1)*indices_c[0])
@@ -778,7 +778,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
         ax2.axvline(item,0,1,color='r',alpha=0.4,lw=0.9)   
     ax2.scatter(f_impar/1000,amp_impar,marker='x',c='tab:orange',label='armónicos impares',zorder=2.5)
     ax2.scatter(f_par/1000,amp_par,marker='+',c='tab:green',label='armónicos pares',zorder=2.5)
-    ax2.set_title('Espectro de frecuencias - {}% - frec max: {:.0f} kHz'.format(filtro*100,frec_limite/1e3), loc='left', fontsize=13)
+    ax2.set_title('Espectro de frecuencias - {}% - frec max: {:.0f} kHz'.format(filtro*100,frec_limite_m/1e3), loc='left', fontsize=13)
     ax2.set_xlabel('Frecuencia (kHz)')
     ax2.set_ylabel('|F{$\epsilon$}|')   
     ax2.set_xlim(0,max(f)/1000)
@@ -825,8 +825,8 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     for item in frec_multip:
         ax2.axvline(item,0,1,color='r',alpha=0.4,lw=0.9)   
     ax2.scatter(f_impar_c/1000,amp_impar_c,marker='x',c='tab:orange',label='armónicos impares',zorder=2.5)
-    ax2.scatter(f_par_c/1000,amp_par_c,marker='+',c='tab:green',label='armónicos pares',zorder=2.5)
-    ax2.set_title('Espectro de frecuencias - {}% - frec max: {:.0f} kHz'.format(filtro*100,frec_limite/1e3), loc='left', fontsize=13)
+    #ax2.scatter(f_par_c/1000,amp_par_c,marker='+',c='tab:green',label='armónicos pares',zorder=2.5)
+    ax2.set_title('Espectro de frecuencias - {}% - frec max: {:.0f} kHz'.format(filtro*100,frec_limite_cal/1e3), loc='left', fontsize=13)
     ax2.set_xlabel('Frecuencia (kHz)')
     ax2.set_ylabel('|F{$\epsilon$}|')   
     ax2.set_xlim(0,max(f_c)/1000)
@@ -836,7 +836,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     ax3.vlines(armonicos_c/1000,ymin=0,ymax=fases_c)
     ax3.stem(armonicos_c/1000,fases_c,basefmt=' ')
     ax3.scatter(f_impar_c/1000,fases_impar_c,marker='x',color='tab:orange',label='armónicos impares',zorder=2.5)
-    ax3.scatter(f_par_c/1000,fases_par_c,marker='+',color='tab:green',label='armónicos pares',zorder=2.5)    
+    #ax3.scatter(f_par_c/1000,fases_par_c,marker='+',color='tab:green',label='armónicos pares',zorder=2.5)    
     #ax3.vlines(f_impar/1000, ymin=0, ymax=fases_impar,color='tab:orange')
     ax3.set_ylim(-np.pi-0.5,np.pi+0.5)
     ax3.set_yticks([-np.pi,-3*np.pi/4,-np.pi/2,-np.pi/4,0,np.pi/4,np.pi/2,3*np.pi/4,np.pi])
@@ -1001,7 +1001,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     ax1=fig3.add_subplot(2,1,1)
     ax1.stem(f_impar/1000,amp_impar,linefmt='C0-',basefmt=' ',markerfmt='.',bottom=0.0,label='armónicos impares')
     ax1.stem(f_par/1000,amp_par,linefmt='C2-',basefmt=' ',markerfmt='.g',bottom=0.0,label='armónicos pares')
-    ax1.plot(f_HF[f_HF>frec_limite]/1000,g_HF[f_HF>frec_limite],'.-',lw=0.9,c='tab:orange',label='Alta frecuencia')
+    ax1.plot(f_HF[f_HF>frec_limite_m]/1000,g_HF[f_HF>frec_limite_m],'.-',lw=0.9,c='tab:orange',label='Alta frecuencia')
     #ax1.scatter(armonicos/1000,amplitudes,c='r',marker='+',label='armónicos')
     #ax1.scatter(f_impar/1000,amp_impar,marker='o',c='tab:blue',label='Armónicos impares',zorder=2.5)
     #ax1.vlines(f_impar/1000, ymin=0, ymax=amp_impar)
@@ -1017,9 +1017,9 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
 
 # Señal HF + Reconstruida LF
     ax2=fig3.add_subplot(2,1,2)
-    ax2.plot(t,rec_impares,'-',lw=1,label=f'Componentes impares (f<{frec_limite/1e6:.0f} MHz)',c='tab:blue',zorder=3)
-    ax2.plot(t,rec_pares,'-',lw=1,label=f'Componentes pares (f<{frec_limite/1e6:.0f} MHz)',c='tab:green',zorder=3)  
-    ax2.plot(t,rec_HF,'-',lw=0.9,label=f'Altas frecuencias ($f>${(frec_limite/1e6):.0f} MHz)',c='tab:orange',zorder=2)
+    ax2.plot(t,rec_impares,'-',lw=1,label=f'Componentes impares (f<{frec_limite_m/1e6:.0f} MHz)',c='tab:blue',zorder=3)
+    ax2.plot(t,rec_pares,'-',lw=1,label=f'Componentes pares (f<{frec_limite_m/1e6:.0f} MHz)',c='tab:green',zorder=3)  
+    ax2.plot(t,rec_HF,'-',lw=0.9,label=f'Altas frecuencias ($f>${(frec_limite_m/1e6):.0f} MHz)',c='tab:orange',zorder=2)
     ax2.plot(t,y,'-',lw=1.2,label='Señal original',c='tab:red',zorder=1,alpha=0.8)    
     #ax2.plot(t,resta,'-',lw=0.9,label='Resta')  
     ax2.set_xlabel('t (s)')
@@ -1037,8 +1037,8 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
 # Espectro en fases impares
     ax1=fig6.add_subplot(2,1,1)
     ax1.stem(f_impar_c/1000,amp_impar_c,linefmt='C0-',basefmt=' ',markerfmt='.',bottom=0.0,label='armónicos impares')
-    ax1.stem(f_par_c/1000,amp_par_c,linefmt='C2-',basefmt=' ',markerfmt='.g',bottom=0.0,label='armónicos pares')
-    ax1.plot(f_c_HF[f_c_HF>frec_limite]/1000,g_c_HF[f_c_HF>frec_limite],'.-',lw=0.9,c='tab:orange',label='Alta frecuencia')
+    #ax1.stem(f_par_c/1000,amp_par_c,linefmt='C2-',basefmt=' ',markerfmt='.g',bottom=0.0,label='armónicos pares')
+    ax1.plot(f_c_HF[f_c_HF>frec_limite_cal]/1000,g_c_HF[f_c_HF>frec_limite_cal],'.-',lw=0.9,c='tab:orange',label='Alta frecuencia')
     #ax1.scatter(armonicos/1000,amplitudes,c='r',marker='+',label='armónicos')
     #ax1.scatter(f_impar/1000,amp_impar,marker='o',c='tab:blue',label='Armónicos impares',zorder=2.5)
     #ax1.vlines(f_impar/1000, ymin=0, ymax=amp_impar)
@@ -1054,9 +1054,9 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
 
 # Señal HF + Reconstruida LF
     ax2=fig6.add_subplot(2,1,2)
-    ax2.plot(t_c,rec_impares_c,'-',lw=1,label=f'Componentes impares (f<{frec_limite/1e6:.0f} MHz)',c='tab:blue',zorder=3)
-    ax2.plot(t_c,rec_pares_c,'-',lw=1,label=f'Componentes pares (f<{frec_limite/1e6:.0f} MHz)',c='tab:green',zorder=3)  
-    ax2.plot(t_c,rec_c_HF,'-',lw=0.9,label=f'Altas frecuencias ($f>${(frec_limite/1e6):.0f} MHz)',c='tab:orange',zorder=2)
+    ax2.plot(t_c,rec_impares_c,'-',lw=1,label=f'Componentes impares (f<{frec_limite_cal/1e6:.0f} MHz)',c='tab:blue',zorder=3)
+    ax2.plot(t_c,rec_pares_c,'-',lw=1,label=f'Componentes pares (f<{frec_limite_cal/1e6:.0f} MHz)',c='tab:green',zorder=3)  
+    ax2.plot(t_c,rec_c_HF,'-',lw=0.9,label=f'Altas frecuencias ($f>${(frec_limite_cal/1e6):.0f} MHz)',c='tab:orange',zorder=2)
     ax2.plot(t_c,y_c,'-',lw=1.2,label='Señal original',c='tab:red',zorder=1,alpha=0.8)    
     #ax2.plot(t,resta,'-',lw=0.9,label='Resta')  
     ax2.set_xlabel('t (s)')
@@ -1315,10 +1315,13 @@ de muestra: 'xxxkHz_yyydA_zzzMss_*.txt
 frec_nombre=[] #Frec del nombre del archivo. Luego comparo con frec ajustada
 Idc = []       #Internal direct current en el generador de RF
 delta_t = []   #Base temporal 
+fecha_m = []   #fecha de creacion archivo, i.e., de la medida 
+FMT = '%d-%m-%Y %H:%M'
 for i in range(len(fnames_m)):
     frec_nombre.append(float(fnames_m[i].split('_')[0][:-3])*1000)
     Idc.append(float(fnames_m[i].split('_')[1][:-2])/10)
     delta_t.append(1e-6/float(fnames_m[i].split('_')[2][:-3]))
+    fecha_m.append(datetime.fromtimestamp(os.path.getmtime(path_m[i])).strftime(FMT))
 
 #%% Procesamiento
 ''' 
@@ -1481,7 +1484,7 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.04,frec_limite=5e6,name=fnames_m[k])
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.04,frec_limite_m=frec_final_m*12,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
         fig_fourier.savefig('Analisis_Fourier_señales_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
@@ -1628,9 +1631,12 @@ for k in range(len(fnames_m)):
      
     #Calculo de potencia disipada (SAR)
     sar = mu_0*Area_ciclo*frec_final_m/(concentracion)  #[sar]=[N/A^2]*[A^2/m^2]*[1/s]*[m^3/g]=W/g
-    error_sar=100*abs(Area_cal)/abs(Area_ciclo) #porcentual
-    print(f'\nSAR: {sar:.2f} (W/g), incerteza del {error_sar:.2f}%')
+    error_sar=abs(Area_cal)/abs(Area_ciclo) 
+    sar = ufloat(sar,error_sar)
+    
+    print(f'\nSAR: {sar:.2uf} (W/g)')
     print(f'Concentracion: {concentracion} g/m^3')
+    print(f'Fecha de la medida: {fecha_m[k]}')
     print('-'*50)
     '''Salidas importantes: lleno las listas. 
     Tienen tantos elmentos como archivos seleccionados'''    
@@ -1667,12 +1673,12 @@ if graficos['Ciclos_HM_m_todos']==1:
     axin.axvline(0,0,1,lw=0.9,c='k')
     
     for i in range(len(fnames_m)):      
-        plt.plot(Ciclos_eje_H[i],Ciclos_eje_M[i],label=f'{fnames_m[i][:-4]}\n$SAR:$ {SAR[i]:.1f} $W/g$')
+        plt.plot(Ciclos_eje_H[i],Ciclos_eje_M[i],label=f'{fnames_m[i][:-4]}\n$SAR:$ {SAR[i]:.1uf} $W/g$\n{fecha_m[i]}')
         axin.plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal_ua[i])
         axin.set_ylabel('M $(V\cdot s)$')
         axin.set_xlabel('H $(A/m)$')
-        #.plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal[i],c='r')
-plt.text(1.02,0.1,f'Pendiente de calibracion promedio:\n {np.mean(Pendiente_cal):.2e} +/- {np.std(Pendiente_cal):.2e} $V\cdot s \cdot m/A$',bbox=dict(color='tab:orange',alpha=0.8),transform=ax.transAxes)
+        #plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal[i],c='r')
+plt.text(1.02,0.1,f'Pendiente de calibracion promedio:\n {ufloat(np.mean(Pendiente_cal),np.std(Pendiente_cal)):^.2ue} $V\cdot s \cdot m/A$',bbox=dict(color='tab:orange',alpha=0.8),transform=ax.transAxes)
 plt.legend(loc='upper left',bbox_to_anchor=(1.02,0.5,0.4,0.5))
 plt.grid()
 plt.xlabel('Campo (A/m)',fontsize=15)
@@ -1706,7 +1712,7 @@ salida = Table([col_0, col_1, col_2, col_3, col_4, col_5, col_6])
 formato_salida = {'Nombre del archivo analizado':'%s',
                   'Frecuencia (kHz)':'%f',
                   'Campo Maximo (kA/m)':'%f',
-                  'SAR (W/g)': '%f',
+                  'SAR (W/g)': '%uf',
                   'Coercitividad (kA/m)': '%f',
                   'Remanencia (kA/m)': '%f', 
                   'Peor quita de ruido porcentual': '%f'} 
