@@ -640,18 +640,12 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
 
     indices_r_c,_=find_peaks(abs(g_r_c),threshold=max(g_r_c)*filtro)
 
-#En caso de frecuencia anomala menor que la fundamental en Muestra
-    #if f[indices[0]]<f_r[indices_r[0]]:
-    #    print('ATENCION: detectada subfrecuencia anómala en el espectro de la señal de muestra {:.2f} Hz\n'.format(f[indices[0]]))
-    #    indices = np.delete(indices,0) 
-    #else:
-        #pass reeemplazado por lineas siguiente 14 Mar 2022
-    
+    #En caso de frecuencia anomala menor que la fundamental en Muestra
     for elem in indices:
         if f[elem]<0.9*f_r[indices_r[0]]:
             print('ATENCION: detectada subfrecuencia anómala en el espectro de la señal de muestra {:.2f} Hz\n'.format(f[elem]))
             indices = np.delete(indices,0)
-            
+    #En caso de frecuencia anomala menor que la fundamental en Calibracion
     for elem in indices_c:
         if f_c[elem]<0.9*f_r[indices_r[0]]:
             print('ATENCION: detectada subfrecuencia anómala en el espectro de la señal de calibracion {:.2f} Hz\n'.format(f_c[elem]))
@@ -672,7 +666,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     armonicos_r_c = f_r_c[indices_r_c]
     amplitudes_r_c = g_r_c[indices_r_c]
     fases_r_c = fase_r_c[indices_r_c]
-#Imprimo tabla 
+    #Imprimo tabla 
     print(f'{k+1}/{len(fnames_m)}\nArchivo: {fnames_m[k]:s}')
     print('''Espectro de la señal de referencia:\nFrecuencia (Hz) - Intensidad rel - Fase (rad)''')
     for i in range(len(indices_r)):
@@ -1093,16 +1087,16 @@ nombre_T='FG_T'  #para medidas en descongelamiento
 
 #¿Qué gráficos desea ver? (1 = sí, ~1 = no)
 graficos={
-    'Referencias_y_ajustes': 0,
-    'Ref_Señal_m_y_f': 0, #Sin usar
-    'Ref_Señal_c_y_f': 0, #Sin usar
+    'Referencias_y_ajustes': 1,
+    'Ref_Señal_m_y_f': 1, #Sin usar
+    'Ref_Señal_c_y_f': 1, #Sin usar
     'Resta_m-f': 0,
     'Resta_c-f': 0,
     'Resta_mf_y_cf':0,
-    'Filtrado_calibracion': 0,
-    'Filtrado_muestra': 0,
-    'Recorte_a_periodos_enteros_c': 0,
-    'Recorte_a_periodos_enteros_m': 0,
+    'Filtrado_calibracion': 1,
+    'Filtrado_muestra': 1,
+    'Recorte_a_periodos_enteros_c': 1,
+    'Recorte_a_periodos_enteros_m': 1,
     'Campo_y_Mag_norm_c': 1,
     'Ciclos_HM_calibracion': 1,
     'Campo_y_Mag_norm_m': 1,
@@ -1112,6 +1106,15 @@ graficos={
     'SAR_vs_Amplitud_Campo**2': 0} #Sin usar
 
 #¿Desea filtrar las señales? 
+
+
+
+
+
+    
+
+
+
 #(0 = No, 1 = Filtro Actis, 2 = Filtro Fourier)
 filtrarcal = 0     # Filtro para la calibración
 filtrarmuestra = 0 # Filtro para la muestra
@@ -1119,7 +1122,7 @@ Analisis_de_Fourier = 1 # sobre las señales, imprime espectro de señal muestra
 #¿Quiere generar una imagen png con cada ciclo M vs. H obtenido? 
 # escriba guarda_imagen_ciclo=1. Caso contrario, deje 0 o cualquier otro valor.
 guarda_imagen_ciclo=1
-concentracion = 10000 #[concentracion]= g/m^3 (1e4 g/m^3 == 10 g/l) (Default = 10000 g/m^3)
+concentracion = 25000 #[concentracion]= g/m^3 (1e4 g/m^3 == 10 g/l) (Default = 10000 g/m^3)
 mu_0 = 4*np.pi*10**-7 #[mu_0]=N/A^2
 nombre_archivo_salida = 'Resultados_ESAR.dat'
 textofondo = '_fondo.txt' #Texto que identifica los archivos de fondo
@@ -1145,6 +1148,8 @@ Ciclos_eje_H_cal_ua = []
 Ciclos_eje_M_cal_ua = []
 Pendiente_cal = []
 Ordenada_cal = []
+Pendiente_cal_filtrada = []
+Ordenada_cal_filtrada = []
 Frecuencia_muestra_kHz = []
 Frecuencia_fondo_kHz = []
 SAR = []
@@ -1165,7 +1170,7 @@ config = {
 'Filtrar señal de calibracion' :bool(filtrarcal),
 'Analisis de Fourier' : bool(Analisis_de_Fourier), 
 'Guarda imagen_ciclo':bool(guarda_imagen_ciclo),
-'Concentracion ()' : concentracion,
+'Concentracion (g/l)' : concentracion/1e3,
 'Texto p/ archivo calibracion' : textocalibracion
 }
 print('Configuracion del script:')
@@ -1176,7 +1181,7 @@ pprint(pd.DataFrame.from_dict(data=graficos,orient='index'))
 #Fecha para usar en graficos 
 fecha_nombre = datetime.today().strftime('%Y%m%d_%H%M%S')
 fecha_graf = time.strftime('%Y_%m_%d', time.localtime())
-#%%Cuadro de seleccion de Archivos
+#%Cuadro de seleccion de Archivos
 '''
 Seleccion de carpeta con archivos via interfaz de usuario
 '''
@@ -1274,7 +1279,7 @@ if todos!=1: #Selecciono 1 o + archivos de muestra
                 fnames_f.append(fondo)
                 path_f.append(directorio + '/' + fondo)
                 m+=1  
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %
 # Imprimo los archivos a procesar, clasificados m,c,f, y el num total
 print('Directorio de trabajo: '+ directorio +'\n')
 print('Archivos de muestra en el directorio: ')
@@ -1307,7 +1312,7 @@ if ciclos_en_descongelamiento==0:
         raise Exception(f'Archivo de muestra faltante\nArchivos muestra: {len(fnames_m)}\nArchivos calibracion: {len(fnames_c)}\nArchivos fondo: {len(fnames_f)} ')
     else:
         pass
-#%% Params del nombre
+#% Params del nombre
 '''
 Parámetros de la medida a partir de nombre del archivo 
 de muestra: 'xxxkHz_yyydA_zzzMss_*.txt
@@ -1323,7 +1328,7 @@ for i in range(len(fnames_m)):
     delta_t.append(1e-6/float(fnames_m[i].split('_')[2][:-3]))
     fecha_m.append(datetime.fromtimestamp(os.path.getmtime(path_m[i])).strftime(FMT))
 
-#%% Procesamiento
+#% Procesamiento
 ''' 
 Ejecuto medida_cruda()
 En cada iteracion levanto la info de los .txt a dataframes.
@@ -1484,7 +1489,7 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.04,frec_limite_m=frec_final_m*12,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
         fig_fourier.savefig('Analisis_Fourier_señales_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
@@ -1513,7 +1518,7 @@ for k in range(len(fnames_m)):
         plt.grid()
         plt.xlabel('t (s)')
         plt.title('Campo y magnetización normalizados del paramagneto\n'+ fnames_c[k][:-4])
-  #%%  
+  
     if graficos['Ciclos_HM_calibracion']==1: #Ciclo del paramagneto en u.a. (V*s), y Ajuste Lineal 
         fig, ax = plt.subplots()
         ax.plot(campo_c,magnetizacion_ua_c,label='Calibración')
@@ -1524,8 +1529,10 @@ for k in range(len(fnames_m)):
         plt.xlabel('H $(A/m)$')
         plt.ylabel('M ($V\cdot s$)')
         plt.title('Ciclo del paramagneto\n'+ fnames_c[k][:-4])
-#%%
+
     #Calibración para pasar la magnetización de m*V*s/A a A/m
+    #Repito Ajuste Lineal sobre ciclo de la calibración, filtrado por Fourier 
+    pendiente_filtrada , ordenada_filtrada = np.polyfit(campo_c,magnetizacion_ua_c,1) #[pendiente]=m*V*s/A  [ordenada]=V*s
     calibracion=xi_patron_vol/pendiente #[calibracion]=A/m*V*s
     # Doy unidades a la magnetizacion de calibracion, ie, al paramagneto
     magnetizacion_c = calibracion*magnetizacion_ua_c #[magnetizacion_c]=A/m
@@ -1575,15 +1582,14 @@ for k in range(len(fnames_m)):
     Ciclos_eje_H_cal.append(campo_c)
     Ciclos_eje_M_cal.append(magnetizacion_c)
     Ciclos_eje_M_cal_ua.append(magnetizacion_ua_c)
-    
     Pendiente_cal.append(pendiente)
     Ordenada_cal.append(ordenada)
+    Pendiente_cal_filtrada.append(pendiente_filtrada)
+    Ordenada_cal_filtrada.append(ordenada_filtrada)
     #Ajuste_cal_eje_H.append()
 
-    #% ASCII Ciclos
-    '''
-    Exporto ciclos de histeresis en ascii: Tiempo (s) || Campo (A/m) || Magnetizacion (A/m)
-    '''
+    #% Exporto ciclos de histeresis en ASCII: Tiempo (s) || Campo (A/m) || Magnetizacion (A/m)
+    
     col0 = t_f_m - t_f_m[0]
     col1 = campo_m
     col2 = magnetizacion_m
@@ -1632,32 +1638,24 @@ for k in range(len(fnames_m)):
     #Calculo de potencia disipada (SAR)
     sar = mu_0*Area_ciclo*frec_final_m/(concentracion)  #[sar]=[N/A^2]*[A^2/m^2]*[1/s]*[m^3/g]=W/g
     error_sar=abs(Area_cal)/abs(Area_ciclo) 
-    sar = ufloat(sar,error_sar)
+    #sar = ufloat(sar,error_sar) #numero con incerteza
     
-    print(f'\nSAR: {sar:.2uf} (W/g)')
+    print(f'\nSAR: {sar:.2f} (W/g)')
     print(f'Concentracion: {concentracion} g/m^3')
     print(f'Fecha de la medida: {fecha_m[k]}')
     print('-'*50)
-    '''Salidas importantes: lleno las listas. 
-    Tienen tantos elmentos como archivos seleccionados'''    
     
-    ''' Frecuencia de la referencia en la medida de la muestra'''
-    Frecuencia_muestra_kHz.append(frec_final_m/1000)
-    ''' Frecuencia de la referencia en la medida del fondo'''
-    Frecuencia_fondo_kHz.append(frec_f/1000)
-    ''' Specific Absorption Rate'''
-    SAR.append(sar)
-    ''' Campo maximo en kA/m'''
-    Campo_maximo_kAm.append(max(campo_m)/1000) 
-    ''' Campo coercitivo en kA/m'''
-    Coercitividad_kAm.append(Hc_mean/1000)
-    ''' Magnetizacion remanente en kA/m'''
-    Remanencia_kAm.append(Mr_mean/1000)
-    '''Peor diferencia porcentual'''
-    Peor_diferencia.append(peor_diferencia*100)
+    #Salidas importantes: lleno las listas. Tienen tantos elmentos como archivos seleccionados    
+    Frecuencia_muestra_kHz.append(frec_final_m/1000)#Frecuencia de la referencia en la medida de la muestra
+    Frecuencia_fondo_kHz.append(frec_f/1000)    #Frecuencia de la referencia en la medida del fondo
+    SAR.append(sar)                             #Specific Absorption Rate
+    Campo_maximo_kAm.append(max(campo_m)/1000)  #Campo maximo en kA/m
+    Coercitividad_kAm.append(Hc_mean/1000)      #Campo coercitivo en kA/m
+    Remanencia_kAm.append(Mr_mean/1000)         #Magnetizacion remanente en kA/m
+    Peor_diferencia.append(peor_diferencia*100) #Peor diferencia porcentual
     plt.close('all')
-###Problemas aca
-#%%
+
+
 # Plot Ciclos
 if graficos['Ciclos_HM_m_todos']==1:
     fig = plt.figure(figsize=(14,8),constrained_layout=True)
@@ -1673,13 +1671,15 @@ if graficos['Ciclos_HM_m_todos']==1:
     axin.axvline(0,0,1,lw=0.9,c='k')
     
     for i in range(len(fnames_m)):      
-        plt.plot(Ciclos_eje_H[i],Ciclos_eje_M[i],label=f'{fnames_m[i][:-4]}\n$SAR:$ {SAR[i]:.1uf} $W/g$\n{fecha_m[i]}')
+        plt.plot(Ciclos_eje_H[i],Ciclos_eje_M[i],label=f'{fnames_m[i][:-4]}\n$SAR:$ {SAR[i]:.1f} $W/g$\n{fecha_m[i]}')
         axin.plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal_ua[i])
         axin.set_ylabel('M $(V\cdot s)$')
         axin.set_xlabel('H $(A/m)$')
         #plot(Ciclos_eje_H_cal[i], Ciclos_eje_M_cal[i],c='r')
-plt.text(1.02,0.1,f'Pendiente de calibracion promedio:\n {ufloat(np.mean(Pendiente_cal),np.std(Pendiente_cal)):^.2ue} $V\cdot s \cdot m/A$',bbox=dict(color='tab:orange',alpha=0.8),transform=ax.transAxes)
-plt.legend(loc='upper left',bbox_to_anchor=(1.02,0.5,0.4,0.5))
+plt.text(1.02,0.1,f'Pendiente de calibracion promedio s/filtrar:\n {ufloat(np.mean(Pendiente_cal),np.std(Pendiente_cal)):^.2ue} $V\cdot s \cdot m/A$',bbox=dict(color='tab:blue',alpha=0.8),transform=ax.transAxes)
+plt.text(1.02,0.02,f'Pendiente de calibracion promedio filtrada:\n {ufloat(np.mean(Pendiente_cal_filtrada),np.std(Pendiente_cal_filtrada)):^.2ue} $V\cdot s \cdot m/A$',bbox=dict(color='tab:orange',alpha=0.8),transform=ax.transAxes)
+
+plt.legend(loc='upper left',bbox_to_anchor=(1.01,0.5,0.4,0.5),fancybox=True)
 plt.grid()
 plt.xlabel('Campo (A/m)',fontsize=15)
 plt.ylabel('Magnetización (A/m)',fontsize=15)
@@ -1688,7 +1688,7 @@ plt.suptitle('Ciclos de histéresis',fontsize=30)
 plt.savefig('Ciclos_histeresis_'+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
 #plt.close(fig='all')   #cierro todas las figuras 
     #%ASCII de salida
-#%%
+
 '''
 Archivo de salida: utilizo las listas definidas
 '''   
@@ -1733,3 +1733,4 @@ Tiempo de procesamiento
 
 end_time = time.time()
 print(f'Tiempo de ejecución del script: {(end_time-start_time):6.3f} s.')
+
