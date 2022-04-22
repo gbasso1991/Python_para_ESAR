@@ -1735,3 +1735,5 @@ end_time = time.time()
 print(f'Tiempo de ejecución del script: {(end_time-start_time):6.3f} s.')
 
 #esto es para testear el git
+#esto tambien
+
