@@ -1,4 +1,5 @@
 #%%sensor_temperatura.py
+#https://realpython.com/python-encodings-guide/
 from tkinter import *
 import serial.tools.list_ports
 import functools
@@ -20,7 +21,7 @@ def initComPort(index):
     serialObj.open()
 
 for onePort in ports:
-    comBotton= Button(root,text=onePort,font=('Calibri','13'),height=1,width=45,command= functools.partial(initComPort,index=ports.index(onePort)) )
+    comBotton= Button(root,text=onePort,font=('Calibri','13'),height=1,width=40,command= functools.partial(initComPort,index=ports.index(onePort)) )
     comBotton.grid(row=ports.index(onePort),column=0)
 
 dataCanvas = Canvas(root,width=600,height=400,bg='white')
@@ -36,12 +37,13 @@ dataCanvas.create_window((10,0),window=dataFrame,anchor='nw')
 
 def checkSerialPort():
     if serialObj.isOpen():
-        serialObj.write(b'b\r')
-        time.sleep(1)
+        serialObj.write(b't1\r')
+        
         recentPacket = serialObj.readline()
-        recentPacketString = recentPacket.decode('ascii').rstrip('\n')
+        recentPacketString = recentPacket.decode('utf-8','strict').rstrip('\n*')
+        
         Label(dataFrame,text=recentPacketString,font=('Calibri','13'),bg='white').pack() 
-
+        #time.sleep(0.1)
     else:
         pass
 while True:
