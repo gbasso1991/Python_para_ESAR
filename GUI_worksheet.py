@@ -1,28 +1,17 @@
 #%% GUI_worksheet.py
+# siguiendo tutorial de https://www.pythontutorial.net/tkinter/tkinter-pack/
 import tkinter as tk
 from turtle import window_height
-
 from matplotlib.pyplot import text
-
-
 #%%
-
 root = tk.Tk() #creo la instancia
-
 #In Tkinter, components are called widgets
 #create a Label widget placed on the root window
 msj = tk.Label(root,text='Una GUI')
 msj.pack(expand=False)# positions the Label on the main window:
 #% #para arreglar borrosidad en windows
-
-
 root.title('El titulo de la ventana')
 root.geometry('600x400+100+50') #600x400 px and position of the window to 100/50 px from top/left of the screen
-
-
-
-
-
 
 try:
     from ctypes import windll
@@ -31,7 +20,6 @@ finally:
     root.mainloop()
 
 #%% Centrada en pagina 
-
 root = tk.Tk() #creo la instancia
 root.title('Cuadro centrado en pantalla')
 window_width=500
@@ -63,13 +51,9 @@ Use the iconbitmap() method to change the default icon of the window.'''
 import tkinter as tk
 from tkinter import ttk
 
-root=tk.Tk()
-
 tk.Label(root,text='Label clasico').pack()
 ttk.Label(root,text='Label themed').pack()
-
 root.attributes('-topmost', 1) # para que este on top
-
 root.mainloop()
 
 '''Tkinter has both classic and themed widgets. The Tk themed widgets are also known as ttk widgets.
@@ -80,9 +64,7 @@ Ttk widgets provide you with three ways to set options:
 
 Use keyword arguments at widget creation.
 Use a dictionary index after widget creation.
-Use the config() method with keyword attributes.
-
-'''
+Use the config() method with keyword attributes.'''
 #%% comandos interactivos
 import tkinter as tk
 from tkinter import ttk
@@ -136,7 +118,6 @@ root.geometry('600x450')
 root.resizable(False, False)
 root.title('Label Widget Demo')
 
-
 # display an image label
 foto = tk.PhotoImage(file='./python_logo.png')
 
@@ -181,8 +162,7 @@ root.title('Image Button Demo')
 def download_clicked():
     showinfo(
         title='Info',   
-        message='Boton de descarga clickeado!'
-    )
+        message='Boton de descarga clickeado!'    )
 
 download_icon = tk.PhotoImage(file='./download.png')
 
@@ -280,3 +260,90 @@ root.mainloop()
 '''Use the ttk.Entry widget to create a textbox.
 Use an instance of the StringVar() class to associate the current text of the Entry widget with a string variable.
 Use the show option to create a password entry.'''
+
+#%% Geometria
+''' To arrange widgets on a window, you use geometry managers. 
+The pack() method is one of three geometry managers in Tkinter.
+The other geometry managers are grid() and place()
+The pack geometry manager has many configurations. 
+The following are the most commonly used options: 
+fill, expand, side, ipadx, ipady, padx, and pady'''
+
+import tkinter as tk
+
+root = tk.Tk()
+root.title('Pack Demo')
+root.geometry("300x200")
+
+box1= tk.Label(root, text='Box 1',bg='green',fg='black')
+box1.pack(ipadx=10,ipady=10,fill='both',expand=True)
+
+box2= tk.Label(root, text='Box 2',bg='red',fg='white')
+box2.pack(ipadx=10,ipady=10,fill='both',expand=True)
+
+
+root.mainloop()
+#%% The side option specifies the alignment of the widget. 
+# It can be 'left', 'top', 'right', and 'bottom'.
+import tkinter as tk
+
+root = tk.Tk()
+root.title('Pack Demo')
+root.geometry("300x200")
+
+box1= tk.Label(root, text='Box 1',bg='green',fg='black')
+box1.pack(ipadx=10,ipady=10,fill='both',expand=True,side='left')
+
+box2= tk.Label(root, text='Box 2',bg='red',fg='white')
+box2.pack(ipadx=10,ipady=10,fill='both',expand=True,side='right')
+root.mainloop()
+
+'''The geometry manager is suitable for the following:
+Placing widgets in a top-down layout.
+Placing widgets side by side'''
+#%%
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title('Pack Demo')
+root.geometry("300x200")
+
+# alinear widgets top-down
+label1 = tk.Label(root,text='Box 1',bg="red",fg="white")
+label1.pack(ipadx=10,ipady=10,fill='x')
+label2 = tk.Label(root,text='Box 2',bg="green",fg="white")
+label2.pack(ipadx=10,ipady=10,fill='x')
+label3 = tk.Label(root,text='Box 3',bg="blue",fg="white")
+label3.pack(ipadx=10,ipady=10,fill='x')
+
+#alinear widgets left-right.
+label4=tk.Label(root,text='Left',bg="cyan",fg="black")
+label4.pack(expand=True,fill='both',side='left')
+
+label5=tk.Label(root,text='Center',bg="magenta",fg="black")
+label5.pack(expand=True,fill='both',side='left')
+
+label6=tk.Label(root,text='Right',bg="yellow",fg="black")
+label6.pack(expand=True,fill='both',side='left')
+root.mainloop()
+'''Use Tkinter pack geometry manager to arrange widgets in a 
+top-down layout or side by side.
+Use the fill, expand, and side options of pack geometry 
+manager to control how widgets arranged.'''
+
+#%% Grids
+'''Each row and column in the grid is identified by an index. 
+By default, the first row has an index of zero, the second row 
+has an index of one, and so on. Likewise, the columns in the 
+grid have indexes of zero, one, two, etc.
+The indexes of rows and columns in a grid don’t have to start
+ at zero. In addition, the row and column indexes can have gaps.'''
+
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title('Grid Demo')
+root.geometry("300x200")
+
