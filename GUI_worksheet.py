@@ -342,8 +342,228 @@ The indexes of rows and columns in a grid don’t have to start
 
 import tkinter as tk
 from tkinter import ttk
-
+from tkinter.messagebox import showinfo
 root = tk.Tk()
 root.title('Grid Demo')
-root.geometry("300x200")
+root.geometry("240x100")
+root.title('Login')
+root.resizable(0,0)
 
+def login_clicked():
+    '''Callback cuando el boton es cliqueado'''
+    msj= f'Se ha ingresado:\n  mail: {email.get()}\n  pass: {password.get()}'
+    showinfo(title='Informacion',    message=msj)
+
+#Grid config
+root.columnconfigure(0,weight=1)
+root.columnconfigure(1,weight=3)
+
+
+#para recuperar params
+email = tk.StringVar()
+password = tk.StringVar()
+
+#User
+username_label = ttk.Label(root,text='Username:')
+username_label.grid(column=0,row=0,sticky=tk.W,padx=5,pady=5)
+
+username_entry = tk.Entry(root,textvariable=email)
+username_entry.grid(column=1,row=0,sticky=tk.E, padx=5, pady=5)
+
+#Pass
+pass_label=tk.Label(root,text='Pass:')
+pass_label.grid(column=0,row=1,sticky=tk.W,padx=5,pady=5)
+
+pass_entry = tk.Entry(root,show='*',textvariable=password)
+pass_entry.grid(column=1,row=1,sticky=tk.E, padx=5, pady=5)
+
+
+#Boton de Login
+login_button = ttk.Button(root,text="Confirm",command=login_clicked)
+login_button.grid(column=1,row=3,sticky=tk.E,padx=5,pady=5)
+
+root.mainloop()
+
+#%%Ejemplo pero orientado a objetos
+import tkinter as tk
+from tkinter import ttk
+from tkinter.messagebox import showinfo
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.geometry('240x100')
+        self.title('Login')
+        self.resizable(0,0)
+
+        #Grid
+        self.columnconfigure(0,weight=1)
+        self.columnconfigure(1,weight=3)
+
+        self.user = tk.StringVar()
+        self.password = tk.StringVar()
+
+        self.create_widgets()
+    
+    def login_clicked(self):
+        '''Callback cuando el boton es cliqueado'''
+        msj= f'Se ha ingresado:\n  mail: {self.user.get()}\n  pass: {self.password.get()}'
+        showinfo(title='Informacion',    message=msj)
+
+
+    def create_widgets(self):
+        #username
+        username_label = ttk.Label(self,text='Username:')
+        username_label.grid(column=0,row=0,sticky=tk.W,padx=5,pady=5)
+
+        username_entry = tk.Entry(self,textvariable=self.user)
+        username_entry.grid(column=1,row=0,sticky=tk.E, padx=5, pady=5)
+
+        #Pass
+        pass_label=tk.Label(self,text='Pass:')
+        pass_label.grid(column=0,row=1,sticky=tk.W,padx=5,pady=5)
+
+        pass_entry = tk.Entry(self,show='*',textvariable=self.password)
+        pass_entry.grid(column=1,row=1,sticky=tk.E, padx=5, pady=5)
+
+        #Boton de Login
+        login_button = ttk.Button(self,text="Confirm",command=self.login_clicked)
+        login_button.grid(column=1,row=3,sticky=tk.E,padx=5,pady=5)
+
+
+if __name__=='__main__':
+    app=App()
+    app.mainloop()
+
+'''Use the columnconfigure() and rowconfigure() methods to specify the weight of a column and a row of a grid.
+Use grid() method to position a widget on a grid.
+Use sticky option to align the position of the widget on a cell and define how the widget will be stretched.
+Use ipadx, ipady and padx, pady to add internal and external paddings.'''    
+#%% Text
+from tkinter import Tk, Text
+root= Tk()
+root.resizable(0,0)
+root.title('Text Widget Example')
+
+text=Text(root,height=15)
+text.insert('4.1','Texto de prueba')
+text_content = text.get('1.0','end')
+text['state'] = 'normal'#para desactivarlo usar disabled 
+text.pack()
+
+root.mainloop()
+
+#%% Scrollbar 
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.resizable(False, False)
+root.title("Scrollbar Widget Example")
+
+# apply the grid layout
+root.grid_columnconfigure(0, weight=1)
+root.grid_rowconfigure(0, weight=1)
+
+inicial = '''Create a scrollbar with ttk.Scrollbar(orient, command)
+The orient can be 'vertical' or 'horizontal'
+The command can be yview or xview property of the scrollable widget that links 
+to the scrollbar.
+Set the yscrollcommand property of the scrollable widget so it links to the 
+scrollbar.'''
+
+
+# create the text widget
+text = tk.Text(root, height=10)
+text.grid(row=0, column=0, sticky='ew')
+text.insert('1.0',inicial)
+#creo scrollbar
+scrollbar= ttk.Scrollbar(root,orient='vertical',command=text.yview)
+scrollbar.grid(row=0,column=1,sticky='ns')
+
+#comunicacion con la scrollbar
+text['yscrollcommand']=scrollbar.set
+
+root.mainloop()
+#%%
+# Tkinter ScrolledText widget 
+import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
+
+root = tk.Tk()
+root.title("ScrolledText Widget")
+text_init = '''To make it more convenient, Tkinter provides you with the 
+ScrolledText widget which does the same things as a text widget linked 
+to a vertical scroll bar.
+
+To use the ScrolledText widget, you need to import the ScrolledText class 
+from the tkinter.scrolledtext module.
+
+Technically, the ScrolledText class inherits from the Text class.
+
+The ScrolledText widget uses a Frame widget inserted between the container 
+and the Text widget to hold the Scrollbar widget.
+
+Therefore, the ScrolledText has the same properties and methods as the 
+Text widget. In addition, the geometry manager methods including pack, grid, 
+and place are restricted to the Frame.'''
+
+st= ScrolledText(root,width=80,height=10)
+st.insert('1.0',text_init)
+st.pack(fill=tk.BOTH,side=tk.LEFT,expand=True)
+
+root.mainloop()
+
+#%%
+import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
+
+text_init = '''To make it more convenient, Tkinter provides you with the 
+ScrolledText widget which does the same things as a text widget linked 
+to a vertical scroll bar.
+
+To use the ScrolledText widget, you need to import the ScrolledText class 
+from the tkinter.scrolledtext module.
+
+Technically, the ScrolledText class inherits from the Text class.
+
+The ScrolledText widget uses a Frame widget inserted between the container 
+and the Text widget to hold the Scrollbar widget.
+
+Therefore, the ScrolledText has the same properties and methods as the 
+Text widget. In addition, the geometry manager methods including pack, grid, 
+and place are restricted to the Frame.'''
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("ScrolledText Widget")
+        st = ScrolledText(self, width=80, height=10)
+        st.insert('1.0',text_init)
+        st.pack(fill=tk.BOTH, side=tk.LEFT, expand=True)
+
+
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()
+
+#%% Separador   
+import tkinter as tk
+from tkinter import ttk
+
+info = '''Use a separator widget to place a thin horizontal or vertical 
+rule between groups of widgets.
+Remember to set the fill or sticky property to adjust the size of the separator.'''
+root = tk.Tk()
+root.geometry('400x200')
+root.resizable(False, False)
+root.title('Separator Widget Demo')
+
+ttk.Label(root, text="Label 1").pack()
+
+separador = ttk.Separator(root,orient='horizontal')
+separador.pack(fill='x')
+ttk.Label(root,text=info).pack()
+
+root.mainloop()
