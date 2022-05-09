@@ -222,6 +222,7 @@ def fourier_señales_2(t_c,v_c,v_r_c,delta_t,filtro,frec_limite,name,polaridad=1
     ax1.plot(t_c,reconstruida_c,'-',label='Señal reconstruida')
     ax1.set_xlabel('t (s)')
     ax1.set_xlim(0,2/armonicos_c[0])
+    ax1.set_ylim(-4*max(reconstruida_c),4*max(reconstruida_c))
     ax1.axvspan(0,1/armonicos_c[0],color='g',alpha=0.3)
     ax1.set_title(str(name)+'_cal')
     # + ' (R$^2$: {:.3f})'.format(r_2), loc='left', fontsize=13)     

@@ -634,20 +634,20 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     # anulo armonico fundamental descomentando siguiente linea
     #indices = np.delete(indices,0)
     
-    indices_c,_=find_peaks(abs(g_c),threshold=max(g_c)*filtro)
+    indices_c,_=find_peaks(abs(g_c),height=max(g_c)*filtro)
 
-    indices_r,_=find_peaks(abs(g_r),threshold=max(g_r)*filtro)
+    indices_r,_=find_peaks(abs(g_r),height=max(g_r)*filtro)
 
-    indices_r_c,_=find_peaks(abs(g_r_c),threshold=max(g_r_c)*filtro)
+    indices_r_c,_=find_peaks(abs(g_r_c),height=max(g_r_c)*filtro)
 
     #En caso de frecuencia anomala menor que la fundamental en Muestra
     for elem in indices:
-        if f[elem]<0.9*f_r[indices_r[0]]:
+        if f[elem]<0.95*f_r[indices_r[0]]:
             print('ATENCION: detectada subfrecuencia anómala en el espectro de la señal de muestra {:.2f} Hz\n'.format(f[elem]))
             indices = np.delete(indices,0)
     #En caso de frecuencia anomala menor que la fundamental en Calibracion
     for elem in indices_c:
-        if f_c[elem]<0.9*f_r[indices_r[0]]:
+        if f_c[elem]<0.95*f_r[indices_r[0]]:
             print('ATENCION: detectada subfrecuencia anómala en el espectro de la señal de calibracion {:.2f} Hz\n'.format(f_c[elem]))
             indices_c = np.delete(indices_c,0)
             
@@ -772,6 +772,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
         ax2.axvline(item,0,1,color='r',alpha=0.4,lw=0.9)   
     ax2.scatter(f_impar/1000,amp_impar,marker='x',c='tab:orange',label='armónicos impares',zorder=2.5)
     ax2.scatter(f_par/1000,amp_par,marker='+',c='tab:green',label='armónicos pares',zorder=2.5)
+    ax2.axhline(y=max(g)*filtro,xmin=0,xmax=1,c='tab:orange',label=f'Filtro ({filtro*100}%)')
     ax2.set_title('Espectro de frecuencias - {}% - frec max: {:.0f} kHz'.format(filtro*100,frec_limite_m/1e3), loc='left', fontsize=13)
     ax2.set_xlabel('Frecuencia (kHz)')
     ax2.set_ylabel('|F{$\epsilon$}|')   
@@ -1653,7 +1654,7 @@ for k in range(len(fnames_m)):
     Coercitividad_kAm.append(Hc_mean/1000)      #Campo coercitivo en kA/m
     Remanencia_kAm.append(Mr_mean/1000)         #Magnetizacion remanente en kA/m
     Peor_diferencia.append(peor_diferencia*100) #Peor diferencia porcentual
-    plt.close('all')
+    #plt.close('all')
 
 
 # Plot Ciclos
