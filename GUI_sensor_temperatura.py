@@ -10,6 +10,7 @@ serialObj = serial.Serial() #creo instancia
 
 root = Tk() 
 root.config(bg='grey')
+root.resizable(1,1)
 
 def initComPort(index):
     currentPort=str(ports[index])
@@ -20,10 +21,11 @@ def initComPort(index):
     serialObj.open()
 
 for onePort in ports:
-    comBotton= Button(root,text=onePort,font=('Calibri','13'),height=1,width=40,command= functools.partial(initComPort,index=ports.index(onePort)) )
+    comBotton= Button(root,text=onePort,font=('Calibri','13'),height=1,width=40,command= functools.partial(initComPort,index=ports.index(onePort)))
     comBotton.grid(row=ports.index(onePort),column=0)
 
 dataCanvas = Canvas(root,width=600,height=400,bg='white')
+
 dataCanvas.grid(row=0,column=1,rowspan=100)
 
 vsb = Scrollbar(root,orient='vertical',command= dataCanvas.yview)#barra de desplazamiento vertical
@@ -33,21 +35,35 @@ dataCanvas.config(yscrollcommand=vsb.set)
 dataFrame= Frame(dataCanvas,bg='white')
 dataCanvas.create_window((10,0),window=dataFrame,anchor='nw')
 
-
+    
 def checkSerialPort():
     if serialObj.isOpen():
         serialObj.write(b't1\r')
         
         recentPacket = serialObj.readline()
-        recentPacketString = recentPacket.decode('utf-8','strict').rstrip('\n*')
+        recentPacketString = recentPacket.decode('utf-8','ignore').rstrip('\n*')
         
-        Label(dataFrame,text=recentPacketString,font=('Calibri','13'),bg='white').pack() 
+        Label(dataFrame,text=recentPacketString,font=('Calibri','13'),bg='white').pack(expand=True) 
         #time.sleep(0.1)
     else:
         pass
 
+
+def getTemp():
+    if serialObj.isOpen():
+        serialObj.write(b't1\r')
+        recentPacket = serialObj.readline()
+        recentPacketString = recentPacket.decode('utf-8','ignore').rstrip('\n*')
+        Label(dataFrame,text=recentPacketString,bg='white').pack(expand=True) 
+        print(recentPacketString)
+        #time.sleep(0.1)
+    else:
+        pass
+
+
 while True:
 
-    checkSerialPort()
+    #checkSerialPort()
+    getTemp()
     root.update()
     dataCanvas.config(scrollregion=dataCanvas.bbox('all'))
