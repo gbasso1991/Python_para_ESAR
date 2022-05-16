@@ -1,10 +1,5 @@
 #%% Interfaz_sensor_temp.py
 # Giuliano Basso 
-# https://realpython.com/python-encodings-guide/
-# from tkinter import *
-# import serial.tools.list_ports
-# import functools
-# import time
 
 # ports = serial.tools.list_ports.comports()#chekeo que puertos detecta la pc
 # serialObj = serial.Serial() #creo instancia
@@ -57,8 +52,7 @@
 
 #Comprobacion de pto serie
 # ports = serial.tools.list_ports.comports()#chekeo que puertos detecta la pc ver que onda en Linux!
-# serialObj = serial.Serial() #creo instancia
-
+# serialObj = serial.Serial() 
 # def initComPort(index):
 #     currentPort=str(ports[index])
 #     print(currentPort)
@@ -101,7 +95,6 @@ from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
 from matplotlib.pyplot import fill
 import serial.tools.list_ports
-
 import functools
 import time
 from datetime import datetime, timedelta
@@ -112,12 +105,16 @@ import numpy as np
 #%%
 
 def display_time():
+    '''
+    Funcion para obtener la hora y actualizar cada 1 seg
+    '''
     current_time = time.strftime(('%Y/%m/%d - %I:%M:%S %p'))
     date_label['text']=current_time
     root.after(1000,display_time)
     
 
 def detectar_puertos():
+    ''
     ports_detected = serial.tools.list_ports.grep(regexp='USB',include_links=True)#chekeo que puertos detecta la pc
     for port in ports_detected:
         currentPort=str(port)
@@ -127,12 +124,16 @@ def detectar_puertos():
         print('---')
 
 def getTemp(serialObj,t_0):
+    '''Toma un objeto Serial y un tiempo inicial.
+    Se comunica con el sensor y lee respuesta
+    Devuelve tupla: (horario, tiempo abosoluto, Temperatura)'''
+    
     if serialObj.isOpen():
         serialObj.write(b't1\r')
         t_aux =datetime.now()
         recentPacket = serialObj.readline()
         recentPacketString = recentPacket.decode('utf-8','ignore').rstrip('\n*')
-        print(recentPacketString)
+        #print(recentPacketString)
         #Label(dataFrame,text=recentPacketString,bg='white').pack(expand=True) 
         #time.sleep(0.1)
         data_tuple =(t_aux.strftime('%H:%M:%S'), (t_aux-tiempo_0).seconds, recentPacketString)
@@ -156,7 +157,7 @@ def abrir_puerto(name):
     if serialObj.isOpen():
         print(f'puerto serie {name} abierto')
 
-    data_packet= getTemp(serialObj=serialObj,t_0=tiempo_0) #Se comumnica con erecupera tupla con info
+    data_packet= getTemp(serialObj=serialObj,t_0=tiempo_0) #Se comumnica con el sensor recupera tupla con info
     
     #print de datos en pantalla
     # define columns
@@ -197,7 +198,6 @@ def cerrar_puerto(serialObj):
         log_button['state']='disabled'
         stoplog_button['state']='disabled'
 
-
 def init_log():
     print('Adquisicion iniciada')
     stoplog_button['state']='normal'
@@ -226,11 +226,19 @@ def save_log():
     Files=[('.txt','*.txt')]
     archivo = asksaveasfile(mode='w', initialdir=os.getcwd(),filetypes=Files)
     print(f'Registro de temperatura guardado en SAVEDIR')
+    
+
 #%%
 root = tk.Tk()
 root.title('Sensor de Temperatura')
 root.geometry("1200x400")
 root.resizable(1,1)
+
+
+#ports_detected = serial.tools.list_ports.grep(regexp='USB',include_links=True)
+ports_detected = serial.tools.list_ports.comports() #chekeo que puertos detecta la pc
+serialObj = serial.Serial() #creo instancia
+
 
 #Grid config
 root.columnconfigure(0,weight=1)
@@ -273,12 +281,10 @@ savelog_button['state']='disabled'
 #port_button = ttk.Button(root,text='COM1',command=abrir_puerto)
 #port_button.grid(column=0,row=0,sticky='nsew')
 
-
 # separador = ttk.Separator(root,orient='horizontal')
 # separador.grid(columnspan=2,sticky='WE')
 
-#ports_detected = serial.tools.list_ports.grep(regexp='USB',include_links=True)
-ports_detected = serial.tools.list_ports.comports() #chekeo que puertos detecta la pc
+
 
 for indice,puerto in enumerate(ports_detected):
     port_button= tk.Button(root,text=str(puerto[indice]),
