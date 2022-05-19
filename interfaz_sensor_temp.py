@@ -1,76 +1,5 @@
 #%% Interfaz_sensor_temp.py
 # Giuliano Basso 
-
-# ports = serial.tools.list_ports.comports()#chekeo que puertos detecta la pc
-# serialObj = serial.Serial() #creo instancia
-
-# root = Tk() 
-# root.config(bg='grey')
-
-# def initComPort(index):
-#     currentPort=str(ports[index])
-#     print(currentPort)
-#     comPortVar= str(currentPort.split(' ')[0])
-#     serialObj.port= comPortVar
-#     serialObj.baudrate= 9600
-#     serialObj.open()
-
-# for onePort in ports:
-#     comBotton= Button(root,text=onePort,font=('Calibri','13'),height=1,width=40,command= functools.partial(initComPort,index=ports.index(onePort)) )
-#     comBotton.grid(row=ports.index(onePort),column=0)
-
-# dataCanvas = Canvas(root,width=600,height=400,bg='white')
-# dataCanvas.grid(row=0,column=1,rowspan=100)
-
-# vsb = Scrollbar(root,orient='vertical',command= dataCanvas.yview)#barra de desplazamiento vertical
-# vsb.grid(row=0,column=2,rowspan=100,sticky='ns')
-
-# dataCanvas.config(yscrollcommand=vsb.set)
-# dataFrame= Frame(dataCanvas,bg='white')
-# dataCanvas.create_window((10,0),window=dataFrame,anchor='nw')
-
-
-# def checkSerialPort():
-#     if serialObj.isOpen():
-#         serialObj.write(b't1\r')
-        
-#         recentPacket = serialObj.readline()
-#         recentPacketString = recentPacket.decode('utf-8','strict').rstrip('\n*')
-        
-#         Label(dataFrame,text=recentPacketString,font=('Calibri','13'),bg='white').pack() 
-#         #time.sleep(0.1)
-#     else:
-#         pass
-
-# while True:
-
-#     checkSerialPort()
-#     root.update()
-#     dataCanvas.config(scrollregion=dataCanvas.bbox('all'))
-
-#%% Esquema del mio
-
-#Comprobacion de pto serie
-# ports = serial.tools.list_ports.comports()#chekeo que puertos detecta la pc ver que onda en Linux!
-# serialObj = serial.Serial() 
-# def initComPort(index):
-#     currentPort=str(ports[index])
-#     print(currentPort)
-#     comPortVar= str(currentPort.split(' ')[0])
-#     serialObj.port= comPortVar
-#     serialObj.baudrate= 9600
-#     serialObj.open()
-
-#Definir comunicacion con el aparatosky
-
-#Boton help
-#Cliquear para abrir -> Puerto X abierto
-
-#Boton iniciar registro de temperaturas
-#Boton detener registro
-#Boton Guardar archivo
-
-
 ###########################################################################################
                     #               AÑO-MES-DIA                 #    Grafico  T vs t_rel 
 #   COM1   ON/OFF   #   (lo siguiente aparece al abrir el pto)  #
@@ -111,35 +40,113 @@ def display_time():
     current_time = time.strftime(('%Y/%m/%d - %I:%M:%S %p'))
     date_label['text']=current_time
     root.after(1000,display_time)
-    
 
 def detectar_puertos():
-    ''
-    ports_detected = serial.tools.list_ports.grep(regexp='USB',include_links=True)#chekeo que puertos detecta la pc
-    for port in ports_detected:
-        currentPort=str(port)
-        print(currentPort)
-        comPortVar= str(currentPort.split(' ')[-1])
-        print(comPortVar)
-        print('---')
+    'Veo que puertos detecta la PC. Luego los listo en la GUI'
+    #ports_detected = serial.tools.list_ports.grep(regexp='USB')
+    port_names=[]
+    ports_detected_2 = serial.tools.list_ports.comports()
 
-def getTemp(serialObj,t_0):
+    for port in ports_detected_2:
+        print('Device: ',port.device)
+        print('Name: ',port.name)
+        print('Descritption: ',port.description)
+        print('hwid: ',port.hwid)
+        print('-'*20) 
+        port_names.append(port.name)
+    return port_names
+
+def initPort(portname):
+    serialObj = serial.Serial()#Creo la instacia del pto serie
+    serialObj.port = portname
+    serialObj.baudrate= 9600
+    serialObj.stopbits=1
+    serialObj.timeout=0
+    
+    if not serialObj.is_open:
+            serialObj.open()
+            t_init=datetime.now()
+            print(t_init)
+            print(f'Puerto serie {serialObj.name} abierto')
+
+    return serialObj , t_init
+
+
+def getHelp(serialObj):
+    '''Le pide al sensor que printee el menu de ayuda'''
+    serialObj.write(b'h\r')
+    time.sleep(0.1)
+    while serialObj.in_waiting>0:
+        recentPacket = serialObj.readline()
+        recentPacketString = recentPacket.decode('utf-8','ignore')#.rstrip('\n*')
+        print(recentPacketString)
+        time.sleep(0.1)
+
+
+def getTemp(serialObj,channel=1):
+    '''Comunica al sensor el comando para obtener la temperatura del canal especificado'''
+    commandstr = 't'+str(channel)+'\r'
+    
+    serialObj.write(commandstr.encode('utf-8'))
+    time.sleep(0.1)
+    recentPacket = serialObj.readline()
+    recentPacketString = recentPacket.decode('utf-8','ignore')
+    temperature = float(recentPacketString.rstrip())
+    #print(temperature)
+    serialObj.reset_input_buffer()
+    return temperature
+
+def getTimeTemp(serialObj,t_0):
     '''Toma un objeto Serial y un tiempo inicial.
     Se comunica con el sensor y lee respuesta
     Devuelve tupla: (horario, tiempo abosoluto, Temperatura)'''
     
-    if serialObj.isOpen():
-        serialObj.write(b't1\r')
-        t_aux =datetime.now()
-        recentPacket = serialObj.readline()
-        recentPacketString = recentPacket.decode('utf-8','ignore').rstrip('\n*')
-        #print(recentPacketString)
-        #Label(dataFrame,text=recentPacketString,bg='white').pack(expand=True) 
-        #time.sleep(0.1)
-        data_tuple =(t_aux.strftime('%H:%M:%S'), (t_aux-tiempo_0).seconds, recentPacketString)
-        print(data_tuple)
-        return data_tuple
+    #Loop para obtener temperaturas cada 1 s
     
+    while True:
+        t= datetime.now()
+        dt = datetime.now() - t_0 
+        print(t.strftime('%S %f'),'-',f'{dt.total_seconds():.2f}','-', getTemp(serialObj))
+        time.sleep(0.89)
+
+
+    # if serialObj.isOpen():
+    #     serialObj.write(b't1\r')
+    #     t_aux =datetime.now()
+    #     recentPacket = serialObj.readline()
+    #     recentPacketString = recentPacket.decode('utf-8','ignore').rstrip('\n*')
+    #     #print(recentPacketString)
+    #     #Label(dataFrame,text=recentPacketString,bg='white').pack(expand=True) 
+    #     #time.sleep(0.1)
+    #     data_tuple =(t_aux.strftime('%H:%M:%S'), (t_aux-tiempo_0).seconds, recentPacketString)
+    #     print(data_tuple)
+    #     return data_tuple
+#%%   
+puertos = detectar_puertos()
+# for onePort in ports:
+#     comBotton= Button(root,text=onePort,font=('Calibri','13'),height=1,width=40,command= functools.partial(initComPort,index=ports.index(onePort)))
+#     comBotton.grid(row=ports.index(onePort),column=0)
+#%% Inicio el puerto
+
+# ser, t_init = initPort(puertos[0])
+#%%
+ser.is_open
+#%%
+# getHelp(ser)
+# #%%
+# getTemp(ser,1)
+
+
+
+
+# #%%
+# ser.close()
+
+# #%%
+
+# getTimeTemp(ser,t_init)
+
+#%%
 def abrir_puerto(name):
     global tiempo_0
     tiempo_0 = datetime.now() 
@@ -230,15 +237,10 @@ def save_log():
 
 #%%
 root = tk.Tk()
+root.attributes('-topmost', True) # para que este on top
 root.title('Sensor de Temperatura')
 root.geometry("1200x400")
 root.resizable(1,1)
-
-
-#ports_detected = serial.tools.list_ports.grep(regexp='USB',include_links=True)
-ports_detected = serial.tools.list_ports.comports() #chekeo que puertos detecta la pc
-serialObj = serial.Serial() #creo instancia
-
 
 #Grid config
 root.columnconfigure(0,weight=1)
@@ -248,6 +250,27 @@ root.columnconfigure(3,weight=1)
 #root.columnconfigure(4,weight=1)
 #root.columnconfigure(5,weight=1)
 
+# Listo los puertos
+for indice,puerto in enumerate(puertos):
+    port_button= tk.Button(root,text=str(puertos[indice]))
+    #,
+     #                      command=functools.partial(initPort,
+      #                                              portname=puertos[indice]))
+    port_button.bind('<Button-1>',initPort(puertos[indice]))
+    port_button.grid(row=indice,column=0,sticky='nsew')
+
+
+#Boton de cerrado del puerto
+closeport_button = ttk.Button(root,
+                              text='Cerrar puerto',
+                              command=functools.partial(cerrar_puerto,
+                                                        serialObj=serialObj))
+
+closeport_button.grid(column=1,row=1,sticky='nsew')
+closeport_button['state']='disbled'
+
+
+
 #Label status puerto
 status_label = tk.Label(root,text='Puerto cerrado',bg='grey',fg='black')
 status_label.grid(column=1,row=0,sticky='nsew')
@@ -256,26 +279,26 @@ status_label.grid(column=1,row=0,sticky='nsew')
 date_label = tk.Label(root,text='Tiempo',bg='grey',fg='white')
 date_label.grid(column=2,row=0,stick='nsew')
 
-#Boton iniciar registro 
-log_button = ttk.Button(root,text='Iniciar registro',command=init_log)
-log_button.grid(row=3,column=0,columnspan=2,sticky='NSWE')
-log_button['state']='disabled'
+# #Boton iniciar registro 
+# log_button = ttk.Button(root,text='Iniciar registro',command=init_log)
+# log_button.grid(row=3,column=0,columnspan=2,sticky='NSWE')
+# log_button['state']='disabled'
 
-#Boton pausar registro 
-pauselog_button = ttk.Button(root,text='Pausar registro',command=pause_log)
-pauselog_button.grid(row=4,column=0,columnspan=2,sticky='NSWE')
-pauselog_button['state']='disabled'
+# #Boton pausar registro 
+# pauselog_button = ttk.Button(root,text='Pausar registro',command=pause_log)
+# pauselog_button.grid(row=4,column=0,columnspan=2,sticky='NSWE')
+# pauselog_button['state']='disabled'
 
 
-#Boton detener registro 
-stoplog_button = ttk.Button(root,text='Detener registro',command=stop_log)
-stoplog_button.grid(row=5,rowspan=2,column=0,columnspan=2,sticky='NSWE')
-stoplog_button['state']='disabled'
+# #Boton detener registro 
+# stoplog_button = ttk.Button(root,text='Detener registro',command=stop_log)
+# stoplog_button.grid(row=5,rowspan=2,column=0,columnspan=2,sticky='NSWE')
+# stoplog_button['state']='disabled'
 
-#Boton guardar
-savelog_button = ttk.Button(root,text='Guardar registro',command=save_log)
-savelog_button.grid(row=7,rowspan=2,column=0,columnspan=2,sticky='nsew')
-savelog_button['state']='disabled'
+# #Boton guardar
+# savelog_button = ttk.Button(root,text='Guardar registro',command=save_log)
+# savelog_button.grid(row=7,rowspan=2,column=0,columnspan=2,sticky='nsew')
+# savelog_button['state']='disabled'
 
 #Boton Puerto
 #port_button = ttk.Button(root,text='COM1',command=abrir_puerto)
@@ -286,18 +309,7 @@ savelog_button['state']='disabled'
 
 
 
-for indice,puerto in enumerate(ports_detected):
-    port_button= tk.Button(root,text=str(puerto[indice]),
-                           height=1,width=40,
-                           command=functools.partial(abrir_puerto,name=ports_detected[indice].device))
-    port_button.grid(row=indice,column=0,sticky='nsew')
 
-closeport_button = ttk.Button(root,
-                              text='Cerrar puerto',
-                              command=functools.partial(cerrar_puerto,serialObj=serialObj))
-
-closeport_button.grid(column=1,row=1,sticky='nsew')
-closeport_button['state']='disbled'
  
 display_time()
 root.mainloop()
@@ -308,3 +320,4 @@ root.mainloop()
 
 
 ##
+# %%
