@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timedelta
 import serial
 import matplotlib.pyplot as plt
-import matplotlib.animation as anim
+
 #%% Comunicacion 
 
 def getHelp(serial_port):
@@ -53,11 +53,11 @@ def getTimeTemp(serialObj,t_0):
             temp_array.append(Temp)
             date_array.append(t.strftime('%H %M %S %f'))
             time_array.append(dt.total_seconds())
-            time.sleep(0.89)
+            time.sleep(0.2)
             
             fig = plt.figure()
             fig.add_subplot(111)
-            plt.plot(time_array,temp_array,'o-')
+            plt.plot(time_array,temp_array,'.-')
             plt.grid()
             plt.xticks(rotation=45, ha='right')
             plt.subplots_adjust(bottom=0.30)
@@ -69,50 +69,51 @@ def getTimeTemp(serialObj,t_0):
         except KeyboardInterrupt:
             last_figure = plt.figure()
             last_figure.add_subplot(111)
-            plt.plot(time_array,temp_array,'o-')
+            plt.plot(time_array,temp_array,'.-')
             plt.grid()
             plt.xticks(rotation=45, ha='right')
             plt.subplots_adjust(bottom=0.30)
             plt.title('Temperature vs t')
             plt.ylabel('Temperatura (ºC)')
             plt.xlabel('t (s)')
-            plt.show()
+            plt.savefig(f'Temp_vs_t_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png',dpi=300, facecolor='w')
+            serialObj.close()
+            
             break
             
     return temp_array,date_array,time_array,last_figure       
 
 #%% leo Puertos
-ports_detected = serial.tools.list_ports.grep(regexp='USB')
-ports_detected_2 = serial.tools.list_ports.comports()
-
-# %
-for port in ports_detected_2:
-    print(port.device)
-    print(port.name)
-    print(port.description)
-    print(port.hwid)
-    print('-'*20) 
+ports_detected = serial.tools.list_ports.comports(include_links=False)
+port_names=[]
+for port in ports_detected:
+    port_names.append(port.name)
+    print('Puertos detectados:')
+    print('-'*40) 
+    print('Device: ',port.device)
+    print('Name: ',port.name)
+    print('Descritption: ',port.description)
+    print('hwid: ',port.hwid)
+for index,port in enumerate(ports_detected):
+    '''Loop para eliminar puertos extra detectados con Linux'''
+    if 'USB' not in port.device:
+        #print('Puerto eliminado: ',index,port)
+        ports_detected.remove(port)
 
 # %% Elijo el 0 que en windows es el unico que detecta
-pserie = sr.Serial(port='COM4',baudrate= 9600,stopbits=1,timeout=0)
+pserie = sr.Serial(port='/dev/ttyUSB0',baudrate= 9600,stopbits=1,timeout=0)
 if pserie.is_open:
     print(f'Puerto serie {pserie.name} abierto')
 else:
     print('puerto cerrado')
 # %%
 
-getHelp(pserie)
-#%%
-getTemp(pserie)
+#getHelp(pserie)
+
 #%%
 t_0 = datetime.now()
 temperatura,fecha,tiempo,figura = getTimeTemp(pserie,t_0=t_0)
  
-
-
-#%%
-figura
 #%%
 pserie.close()
 # %%
-
