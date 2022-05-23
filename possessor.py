@@ -861,10 +861,10 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     plt.suptitle('Reconstruccion impar',fontsize=20)
 # Señal Original + Reconstruida impar
     ax1=fig2.add_subplot(3,1,1)
-    #ax1.plot(t,y,'.-',lw=0.9,label='Señal original')
+    ax1.plot(t,y,'.-',lw=0.9,label='Señal original')
     #ax1.plot(t,reconstruida*max(rec2),'r-',lw=0.9,label='Reconstruida ({} armónicos)'.format(len(armonicos)))
     #ax1.plot(t,rec_limitada,'-',lw=0.9,label='Filtrada ({:.0f} kHz)'.format(frec_limite/1e3))
-    ax1.plot(t,rec_impares,'-',lw=1.3,c='tab:orange',label='Componentes impares')
+    ax1.plot(t,rec_impares,'-',lw=1.7,c='tab:orange',label='Componentes impares')
     ax1.plot(t,rec_pares,'-',lw=1.1,c='tab:green',label='Componentes pares')
     ax1.set_xlabel('t (s)')
     ax1.set_xlim(0,2/armonicos[0])
@@ -1490,7 +1490,7 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.1,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
         fig_fourier.savefig('Analisis_Fourier_señales_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
