@@ -23,7 +23,7 @@ def getHelp(serial_port):
         print(recentPacketString)
         time.sleep(0.1)
 
-def getTemp(serial_port,channel=1):
+def getTemp(serial_port,channel=10):
     '''Printea la temperatura del canal especificado (default: 1)'''
     commandstr = 't'+str(channel)+'\r'
     serial_port.write(commandstr.encode('utf-8'))
@@ -138,8 +138,24 @@ ascii.write(salida,'registro_T_vs_t_'+ str(fecha_salvado) +'.txt',
 #%%
 if pserie.is_open:
    print(f'Puerto serie {pserie.device} abierto') 
-# %%
 
+
+
+#%% calibracion
+'''Force temperature procedure:
+        I. Apply a stable and known temperature to the sensor tip
+        II. Check the display reading for abnormal deviation from the known temperature
+        III. Send the “f” command followed by channel number, a blank character and the reference
+        temperature value (example “f2 27.0 \r“). Temperatures must be entered in units as
+        specified by the “u” command
+        IV. Wait a few seconds
+        V. Confirm that the readings correspond to the known temperature. '''
+# =============================================================================
+# 
+# pserie.write(b'f1 18.4 \r')
+# 
+# 
+# =============================================================================
 # =============================================================================
 # 
 # data =  np.loadtxt(fname='registro_T_vs_t_2022_05_23_140256.txt',skiprows=2,delimiter='\t')
