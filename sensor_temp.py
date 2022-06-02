@@ -9,7 +9,8 @@ import time
 from datetime import datetime, timedelta
 import serial
 import matplotlib.pyplot as plt
-import matplotlib.animation as anim
+from astropy.io import ascii
+from astropy.table import Table, Column, MaskedColumn
 #%% Comunicacion 
 
 def getHelp(serial_port):
@@ -40,24 +41,29 @@ def getTimeTemp(serialObj,t_0):
     Se comunica con el sensor y lee respuesta
     Devuelve 3 listas: Temperatura, Fecha, tiempo absoluto'''
     temp_array=[]
+    temp_array_2=[]
     date_array = []
     time_array =[]
     
     #Loop para obtener temperaturas cada 1 s
     while True:
         try:
-            Temp = getTemp(serialObj)
+            Temp = getTemp(serialObj,1) #CH1
+            Temp_2 = getTemp(serialObj,2) #CH2
             t= datetime.now()
             dt = datetime.now() - t_0 
-            print(Temp,'-',t,'-',dt)
+            print(Temp,'-',Temp_2,'-',t,'-',dt)
             temp_array.append(Temp)
+            temp_array_2.append(Temp_2)
             date_array.append(t.strftime('%H %M %S %f'))
             time_array.append(dt.total_seconds())
             time.sleep(0.89)
             
             fig = plt.figure()
             fig.add_subplot(111)
-            plt.plot(time_array,temp_array,'o-')
+            plt.plot(time_array,temp_array,'o-',label='CH1')
+            plt.plot(time_array,temp_array_2,'o-',label='CH2')
+            plt.legend()
             plt.grid()
             plt.xticks(rotation=45, ha='right')
             plt.subplots_adjust(bottom=0.30)
@@ -65,21 +71,30 @@ def getTimeTemp(serialObj,t_0):
             plt.ylabel('Temperatura (ºC)')
             plt.xlabel('t (s)')
             plt.pause(0.2)
+            plt.tight_layout()
+            #time.sleep(2)
+            plt.close()
         
         except KeyboardInterrupt:
-            last_figure = plt.figure()
+            fecha_salvado= datetime.today().strftime('%Y_%m_%d_%H%M%S')
+            last_figure = plt.figure(figsize=(8,7))
             last_figure.add_subplot(111)
-            plt.plot(time_array,temp_array,'o-')
+            plt.plot(time_array,temp_array,'o-',label='CH1')
+            plt.plot(time_array,temp_array_2,'o-',label='CH2')
+            plt.legend()
             plt.grid()
             plt.xticks(rotation=45, ha='right')
             plt.subplots_adjust(bottom=0.30)
-            plt.title('Temperature vs t')
+            plt.title('Temperatura vs. t')
             plt.ylabel('Temperatura (ºC)')
             plt.xlabel('t (s)')
-            plt.show()
+            plt.tight_layout()
+            plt.savefig(f'registro_T_vs_t_'+ str(fecha_salvado)+'.png',dpi=300, facecolor='w')
+            serialObj.close()
+            print(f'Puerto serie {serialObj.name} cerrado')
             break
             
-    return temp_array,date_array,time_array,last_figure       
+    return temp_array,temp_array_2,date_array,time_array,fecha_salvado,last_figure       
 
 #%% leo Puertos
 ports_detected = serial.tools.list_ports.grep(regexp='USB')
@@ -101,18 +116,59 @@ else:
     print('puerto cerrado')
 # %%
 
-getHelp(pserie)
-#%%
-getTemp(pserie)
+#getHelp(pserie)
+
+#getTemp(pserie)
+
 #%%
 t_0 = datetime.now()
-temperatura,fecha,tiempo,figura = getTimeTemp(pserie,t_0=t_0)
- 
+TempCH1,TempCH2,fecha,tiempo,fecha_salvado,figura = getTimeTemp(pserie,t_0=t_0)
+#%%
+#Encabezado del archivo de salida 
+encabezado_salida = ['t (s)','Temp CH1 (°C)','Temp CH2 (°C)'] 
+col_0 = tiempo
+col_1 = TempCH1
+col_2 = TempCH2
+#Armo la tabla    
+salida = Table([col_0, col_1,col_2]) 
+formato_salida = {'t (s)':'%12.6f','Temp CH1 (°C)':'%.1f','Temp CH2 (°C)':'%.1f'} 
 
+salida.meta['comments'] = [fecha_salvado]
+
+ascii.write(salida,'registro_T_vs_t_'+ str(fecha_salvado) +'.txt',
+            names=encabezado_salida,
+            overwrite=True,
+            delimiter='\t',
+            formats=formato_salida)
 
 #%%
-figura
-#%%
-pserie.close()
-# %%
+if pserie.is_open:
+   print(f'Puerto serie {pserie.device} abierto') 
 
+
+
+
+#%% calibracion
+# =============================================================================
+
+# '''Force temperature procedure:
+#         I. Apply a stable and known temperature to the sensor tip
+#         II. Check the display reading for abnormal deviation from the known temperature
+#         III. Send the “f” command followed by channel number, a blank character and the reference
+#         temperature value (example “f2 27.0 \r“). Temperatures must be entered in units as
+#         specified by the “u” command
+#         IV. Wait a few seconds
+#         V. Confirm that the readings correspond to the known temperature. '''
+
+# pserie.write(b'f1 18.4 \r')
+# 
+# 
+# =============================================================================
+# =============================================================================
+# 
+# data =  np.loadtxt(fname='registro_T_vs_t_2022_05_23_140256.txt',skiprows=2,delimiter='\t')
+# t =data[:,0]
+# temp =data[:,1]
+# plt.plot(t,temp,'.-')
+# 
+# =============================================================================
