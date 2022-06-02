@@ -44,7 +44,7 @@ def getTimeTemp(serialObj,t_0):
     temp_array_2=[]
     date_array = []
     time_array =[]
-    
+
     #Loop para obtener temperaturas cada 1 s
     while True:
         try:
