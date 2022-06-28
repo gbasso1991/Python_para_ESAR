@@ -1,11 +1,9 @@
 #%% 
-# -*- coding: utf-8 -*-
 """
 possessor.py 
 (https://gost1980s.bandcamp.com/)
 
 @author: Giuliano Andrés Basso
-Basado en Planet_caravan_20210419.py 
 
 Descripcion:
 Toma uno o varios archivos con formato de nombre:
@@ -1208,10 +1206,7 @@ if todos==1: #Leo todos los archivos del directorio
     fnames_f = []
     path_f = []
 
-    #Seleccion de los archivos 
-
-    if ciclos_en_descongelamiento==0:
-        
+    if ciclos_en_descongelamiento==0 and una_sola_cal==0: # N*_muestra.txt ,  N*_cal.txt, N*_fondo.txt 
         for muestra in fnmatch.filter(filenames,'*'+nombre+'.txt'):
             fnames_m.append(muestra)
             path_m.append(directorio +'/'+ muestra)
@@ -1224,7 +1219,23 @@ if todos==1: #Leo todos los archivos del directorio
             fnames_f.append(fondo)
             path_f.append(directorio + '/' + fondo)
 
-    if ciclos_en_descongelamiento!=0:
+    if ciclos_en_descongelamiento==0 and una_sola_cal==1: # N*_muestra.txt , N*_fondo.txt , 1*_cal.txt
+        for muestra in fnmatch.filter(filenames,'*'+nombre_T+'*.txt'):
+            fnames_m.append(muestra)
+            path_m.append(directorio +'/'+ muestra)
+
+        for cal in fnmatch.filter(filenames,'*_cal.txt'): #posible bug si hay 2 o + archivos _cal.txt
+            l=0
+            while l < len(fnames_m):
+                fnames_c.append(cal)
+                path_c.append(directorio + '/'+ cal)
+                l+=1
+        
+        for fondo in fnmatch.filter(filenames,'*_fondo.txt'):
+            fnames_f.append(fondo)
+            path_f.append(directorio + '/' + fondo)
+ 
+    if ciclos_en_descongelamiento!=0: # N*_muestra.txt , 1*_cal.txt, 1*_fondo.txt
         for muestra in fnmatch.filter(filenames,'*'+nombre_T+'*.txt'):
             fnames_m.append(muestra)
             path_m.append(directorio +'/'+ muestra)
@@ -1242,24 +1253,6 @@ if todos==1: #Leo todos los archivos del directorio
                 fnames_f.append(fondo)
                 path_f.append(directorio + '/' + fondo)
                 m+=1  
-
-    if una_sola_cal==1:
-        for muestra in fnmatch.filter(filenames,'*'+nombre_T+'*.txt'):
-            fnames_m.append(muestra)
-            path_m.append(directorio +'/'+ muestra)
-
-        for cal in fnmatch.filter(filenames,'*_cal.txt'):
-            l=0
-            while l < len(fnames_m):
-                fnames_c.append(cal)
-                path_c.append(directorio + '/'+ cal)
-                l+=1
-        
-        for fondo in fnmatch.filter(filenames,'*_fondo.txt'):
-            fnames_f.append(fondo)
-            path_f.append(directorio + '/' + fondo)
-
-
 
 if todos!=1: #Selecciono 1 o + archivos de muestra 
     texto_encabezado = "Seleccionar archivos con las medidas de la muestra:"
@@ -1275,24 +1268,42 @@ if todos!=1: #Selecciono 1 o + archivos de muestra
 
     for item in path_m:    
         fnames_m.append(item.split('/')[-1])
-      
-    if ciclos_en_descongelamiento==0:
+
+    if ciclos_en_descongelamiento==0  and una_sola_cal==0: # N*_muestra.txt ,  N*_cal.txt, N*_fondo.txt:
         for i in range(fa):
             fnames_c.append(fnames_m[i].replace('.txt',textocalibracion))     
             fnames_f.append(fnames_m[i].replace('.txt',textofondo))
             path_c.append(directorio + '/' + fnames_c[i])
             path_f.append(directorio + '/' + fnames_f[i])
-    filenames = fnames_m + fnames_c+fnames_f  
+        filenames = fnames_m + fnames_c+fnames_f  
     
-    if ciclos_en_descongelamiento!=0:
-        #busco 1 solo archivo _cal y _fondo
+    if ciclos_en_descongelamiento==0 and una_sola_cal==1: # N*_muestra.txt , N*_fondo.txt , 1*_cal.txt
+        print('aa')
+        filenames_c = fnmatch.filter(os.listdir(directorio),'*_cal.txt')
+        if not filenames_c:
+            raise Exception('No se detecta archivo de calibracion en el directorio.')
+        elif len(filenames_c)!=1:
+            raise(Exception(f'Detectados {len(filenames_c)} archivos de calibracion en el directorio.'))            
+        else:
+            for _ in range(len(fnames_m)):
+                fnames_c.append(filenames_c[0])
+                path_c.append(directorio + '/'+ cal)
+        
+        for fondo in fnmatch.filter(filenames,'*_fondo.txt'):
+            fnames_f.append(fondo)
+            path_f.append(directorio + '/' + fondo)
+
+    if ciclos_en_descongelamiento!=0: # N*_muestra.txt , 1*_fondo.txt , 1*_cal.txt
         filenames = os.listdir(directorio)  
         for cal in fnmatch.filter(filenames,'*_cal.txt'):
-            l=0
-            while l < len(fnames_m):
-                fnames_c.append(cal)
-                path_c.append(directorio + '/'+ cal)
-                l+=1
+            if not cal:
+                raise Exception('No se detecta archivo de calibracion en el directorio.')
+            elif len(cal)>1:
+                raise Exception(f'Detectados {len(cal)} archivos de calibracion en el directorio.'  )            
+            else:
+                for _ in range(len(fnames_m)):
+                    fnames_c.append(cal)
+                    path_c.append(directorio + '/'+ cal)
 
         for fondo in fnmatch.filter(filenames,'*_fondo.txt'):
             m=0
@@ -1300,31 +1311,36 @@ if todos!=1: #Selecciono 1 o + archivos de muestra
                 fnames_f.append(fondo)
                 path_f.append(directorio + '/' + fondo)
                 m+=1  
-# %
-# Imprimo los archivos a procesar, clasificados m,c,f, y el num total
+#%% Imprimo los archivos a procesar, clasificados m,c,f, y el num total
 print('Directorio de trabajo: '+ directorio +'\n')
-print('Archivos de muestra en el directorio: ')
+print('Archivos de muestra seleccionados: ')
 for item in fnames_m:
     print(item)
-print('\nArchivos de calibracion en el directorio: ')
 
-if ciclos_en_descongelamiento==0:
+print('\nArchivos de calibracion requeridos: ')
+if ciclos_en_descongelamiento==0 and una_sola_cal==0: #N,N,N
     for item in fnames_c:
         print(item)
 else:
     print(fnames_c[0])
 
-print('\nArchivos de fondo en el directorio: ')
-if ciclos_en_descongelamiento==0:
+print('\nArchivos de fondo requeridos: ')
+if ciclos_en_descongelamiento==0 and una_sola_cal==0:
     for item in fnames_f:
         print(item)
-    print('\nSon {} archivos.'.format(len(fnames_m)+len(fnames_c)+len(fnames_m)))    
+    print(f'\nSon {len(fnames_m)+len(fnames_c)+len(fnames_m)} archivos.')    
+
+elif ciclos_en_descongelamiento==0 and una_sola_cal==1:
+    for item in fnames_f:
+        print(item)
+    print(f'\nSon {len(fnames_m)+1+len(fnames_f)} archivos.')    
+
 else: 
     print(fnames_f[0])    
-    print('\nSon {} archivos.'.format(len(fnames_m)+2))
+    print(f'\nSon {len(fnames_m)+2} archivos.')
 print('-'*50)
-# Para detectar triadas de archivos (m,c,f) incompletas
-if ciclos_en_descongelamiento==0:
+#%% Para detectar triadas de archivos (m,c,f) incompletas
+if ciclos_en_descongelamiento==0 and una_sola_cal==0:
     if len(fnames_c)<len(fnames_m):
         raise Exception(f'Archivo de calibracion faltante\nArchivos muestra: {len(fnames_m)}\nArchivos calibracion: {len(fnames_c)} ')
     elif len(fnames_f)<len(fnames_m):
@@ -1333,7 +1349,16 @@ if ciclos_en_descongelamiento==0:
         raise Exception(f'Archivo de muestra faltante\nArchivos muestra: {len(fnames_m)}\nArchivos calibracion: {len(fnames_c)}\nArchivos fondo: {len(fnames_f)} ')
     else:
         pass
-#% Params del nombre
+
+if ciclos_en_descongelamiento==0 and una_sola_cal==1:
+    if len(fnames_f)<len(fnames_m):
+        raise Exception(f'Archivo de fondo faltante\nArchivos muestra: {len(fnames_m)}\nArchivos fondo: {len(fnames_f)}')
+    elif len(fnames_m)<len(fnames_f):
+        raise Exception(f'Archivo de muestra faltante\nArchivos muestra: {len(fnames_m)}\nArchivos calibracion: {len(fnames_c)}\nArchivos fondo: {len(fnames_f)} ')
+    
+
+
+#%% Params del nombre
 '''
 Parámetros de la medida a partir de nombre del archivo 
 de muestra: 'xxxkHz_yyydA_zzzMss_*.txt
@@ -1349,7 +1374,7 @@ for i in range(len(fnames_m)):
     delta_t.append(1e-6/float(fnames_m[i].split('_')[2][:-3]))
     fecha_m.append(datetime.fromtimestamp(os.path.getmtime(path_m[i])).strftime(FMT))
 
-#% Procesamiento
+#%% Procesamiento
 ''' 
 Ejecuto medida_cruda()
 En cada iteracion levanto la info de los .txt a dataframes.
@@ -1757,3 +1782,5 @@ print(f'Tiempo de ejecución del script: {(end_time-start_time):6.3f} s.')
 
 
 
+
+# %%
