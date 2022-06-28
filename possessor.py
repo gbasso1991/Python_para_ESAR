@@ -540,6 +540,12 @@ def promediado_ciclos(t,v_r,v,frecuencia,N_ciclos):
     delta_t = (t_f[-1]-t_f[0])/len(t_f)
     return t_f , v_r_f, v_f , delta_t
 
+
+
+
+
+#%% Die Kernel
+
 def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limite_m,frec_limite_cal,name):
     '''
     Toma señales de muestra, calibracion y referencia obtieniendo via fft frecuencias y fases.
@@ -1065,7 +1071,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
 
     return armonicos, armonicos_r, amplitudes, amplitudes_r, fases , fases_r , fig, fig2, indices, indx_impar, rec_impares,rec_impares_c,fig3,fig4,fig5,fig6
 
-#%% Manual Settings
+#%% Inputs Manuales 
 '''
 Input necesario de parte del usuario y definiciones preliminares
 '''
@@ -1108,15 +1114,10 @@ graficos={
 
 #¿Desea filtrar las señales? 
 
+#%% Especifico si el script toma 1 sola medida de calibracion
+una_sola_cal= 0 # 0= busca 3 archivos como siempre (m,c,f); 1: busca 1 archivo con texto '_cal.txt' 
 
-
-
-
-    
-
-
-
-#(0 = No, 1 = Filtro Actis, 2 = Filtro Fourier)
+#filtrar_x : 0 = No, 1 = Filtro Actis, 2 = Filtro Fourier
 filtrarcal = 0     # Filtro para la calibración
 filtrarmuestra = 0 # Filtro para la muestra
 Analisis_de_Fourier = 1 # sobre las señales, imprime espectro de señal muestra
@@ -1166,6 +1167,7 @@ config = {
 'Nombre archivo de temperaturas':nombre_T,
 'Nombre archivo de salida': nombre_archivo_salida,
 'Texto p/ archivo fondo' :textofondo,
+'Uso una sola calibracion' : bool(una_sola_cal),
 'Ciclos en descongelamiento' : bool(ciclos_en_descongelamiento),
 'Filtrar señal de muestra' : bool(filtrarmuestra),
 'Filtrar señal de calibracion' :bool(filtrarcal),
@@ -1240,6 +1242,24 @@ if todos==1: #Leo todos los archivos del directorio
                 fnames_f.append(fondo)
                 path_f.append(directorio + '/' + fondo)
                 m+=1  
+
+    if una_sola_cal==1:
+        for muestra in fnmatch.filter(filenames,'*'+nombre_T+'*.txt'):
+            fnames_m.append(muestra)
+            path_m.append(directorio +'/'+ muestra)
+
+        for cal in fnmatch.filter(filenames,'*_cal.txt'):
+            l=0
+            while l < len(fnames_m):
+                fnames_c.append(cal)
+                path_c.append(directorio + '/'+ cal)
+                l+=1
+        
+        for fondo in fnmatch.filter(filenames,'*_fondo.txt'):
+            fnames_f.append(fondo)
+            path_f.append(directorio + '/' + fondo)
+
+
 
 if todos!=1: #Selecciono 1 o + archivos de muestra 
     texto_encabezado = "Seleccionar archivos con las medidas de la muestra:"
