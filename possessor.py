@@ -1113,7 +1113,7 @@ graficos={
 #¿Desea filtrar las señales? 
 
 #%% Especifico si el script toma 1 sola medida de calibracion
-una_sola_cal= 0 # 0= busca 3 archivos como siempre (m,c,f); 1: busca 1 archivo con texto '_cal.txt' 
+una_sola_cal= 1 # 0= busca 3 archivos como siempre (m,c,f); 1: busca 1 archivo con texto '_cal.txt' 
 
 #filtrar_x : 0 = No, 1 = Filtro Actis, 2 = Filtro Fourier
 filtrarcal = 0     # Filtro para la calibración
