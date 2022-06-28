@@ -926,7 +926,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
 #Grafico 2.1: Espectro Impar, Fasorial, Original+Rec_impar (Calibracion)
     fig5 = plt.figure(figsize=(8,12),constrained_layout=True)
     plt.suptitle('Reconstruccion impar (calibracion)',fontsize=20)
-# Señal Original + Reconstruida impar
+# Señal Original + Reconstruida impar (Calibracion)
     ax1=fig5.add_subplot(3,1,1)
     ax1.plot(t_c,y_c,'.-',lw=0.9,label='Señal original')
     ax1.plot(t_c,rec_impares_c,'-',lw=1.3,label='Componentes impares')
@@ -938,7 +938,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     # + ' (R$^2$: {:.3f})'.format(r_2), loc='left', fontsize=13)     
     ax1.grid() 
     ax1.legend(loc='best')
-# Espectro en fases impares
+# Espectro en fases impares (Calibracion)
     ax2=fig5.add_subplot(3,1,2)
     #ax2.scatter(armonicos/1000,amplitudes,c='r',marker='+',label='armónicos')
     ax2.scatter(f_impar_c/1000,amp_impar_c,marker='o',c='tab:blue',label='Armónicos impares',zorder=2.5)
@@ -955,7 +955,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     ax2.set_xlim(0,max(f)/1000)
     ax2.set_ylim(0,max(amp_impar)*1.1)
     ax2.grid()
-# inset
+# inset (Calibracion)
     axin = ax2.inset_axes([0.4, 0.35, 0.57, 0.6])
     axin.scatter(f_impar_c/1000,fases_impar_c,label='Fases')
     axin.vlines(f_impar_c/1000, ymin=0, ymax=fases_impar_c)
@@ -971,7 +971,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     axin.grid()
     axin.set_title(' Espectro de fases',loc='left', y=0.87, fontsize=10)
     axin.set_xlim(0,max(f_impar)/1000)
-# Fasorial impares
+# Fasorial impares (Calibracion)
     ax3=fig5.add_subplot(3,1,3,polar=True)
     ax3.scatter(theta_0,r0,label='Referencia',marker='D',c='tab:red')
     ax3.plot([0,theta_0], [0,1],'-',c='tab:red')
@@ -1063,7 +1063,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     ax2.grid() 
     ax2.legend(loc='best')
 
-    return armonicos, armonicos_r, amplitudes, amplitudes_r, fases , fases_r , fig, fig2, indices, indx_impar, rec_impares,rec_impares_c,fig3,fig4,fig5,fig6
+    return armonicos, armonicos_r, amplitudes, amplitudes_r, fases , fases_r , fig, fig2, indices, indx_impar, rec_impares,rec_impares_c,fig3,fig4,fig5,fig6,  t,y, rec_impares, rec_pares ,armonicos[0],t_c,y_c,rec_impares_c,rec_pares_c,armonicos_c,f_impar_c,amp_impar_c,armonicos_r,f_impar ,amp_impar,f
 
 #%% Manual Settings
 '''
@@ -1490,10 +1490,17 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
+<<<<<<< HEAD
         armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
         fig_fourier.savefig(fnames_m[k][:-4]+'_Espectro_Fourier_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
+=======
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier,   t_aux,y_aux,rec_impares_aux,rec_pares_aux,armonicos_0_aux,t_c_aux,y_c_aux,rec_impares_c_aux,rec_pares_c_aux,armonicos_c_aux,f_impar_c_aux,amp_impar_c_aux,armonicos_r_aux,f_impar_aux,amp_impar_aux,f_aux  = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.03,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
+
+        # Guardo Graficos
+        fig_fourier.savefig(fnames_m[k][:-4]+'_Fourier_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
+>>>>>>> ac4f7dae040e2aaef24a291c6fd13d53e39fdea0
         fig2_fourier.savefig(fnames_m[k][:-4]+'_Rec_impar_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
         #plt.close(fig='all')   #cierro todas las figuras
         
