@@ -1107,15 +1107,6 @@ graficos={
     'SAR_vs_Amplitud_Campo**2': 0} #Sin usar
 
 #¿Desea filtrar las señales? 
-
-
-
-
-
-    
-
-
-
 #(0 = No, 1 = Filtro Actis, 2 = Filtro Fourier)
 filtrarcal = 0     # Filtro para la calibración
 filtrarmuestra = 0 # Filtro para la muestra
