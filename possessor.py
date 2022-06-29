@@ -1481,17 +1481,10 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
-<<<<<<< HEAD
         armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
         fig_fourier.savefig(fnames_m[k][:-4]+'_Espectro_Fourier_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
-=======
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier,   t_aux,y_aux,rec_impares_aux,rec_pares_aux,armonicos_0_aux,t_c_aux,y_c_aux,rec_impares_c_aux,rec_pares_c_aux,armonicos_c_aux,f_impar_c_aux,amp_impar_c_aux,armonicos_r_aux,f_impar_aux,amp_impar_aux,f_aux  = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.03,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
-
-        # Guardo Graficos
-        fig_fourier.savefig(fnames_m[k][:-4]+'_Fourier_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
->>>>>>> ac4f7dae040e2aaef24a291c6fd13d53e39fdea0
         fig2_fourier.savefig(fnames_m[k][:-4]+'_Rec_impar_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
         #plt.close(fig='all')   #cierro todas las figuras
         
