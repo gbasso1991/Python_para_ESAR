@@ -1481,12 +1481,12 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=30*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
         fig_fourier.savefig(fnames_m[k][:-4]+'_Espectro_Fourier_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
 
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier  = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.03,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier  = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.03,frec_limite_m=30*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
         fig_fourier.savefig(fnames_m[k][:-4]+'_Fourier_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
@@ -1711,7 +1711,7 @@ salida = Table([col_0, col_1, col_2, col_3, col_4, col_5, col_6])
 formato_salida = {'Nombre del archivo analizado':'%s',
                   'Frecuencia (kHz)':'%f',
                   'Campo Maximo (kA/m)':'%f',
-                  'SAR (W/g)': '%uf',
+                  'SAR (W/g)': '%f',
                   'Coercitividad (kA/m)': '%f',
                   'Remanencia (kA/m)': '%f', 
                   'Peor quita de ruido porcentual': '%f'} 
