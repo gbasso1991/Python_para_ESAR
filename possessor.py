@@ -1481,7 +1481,6 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
-
         armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
