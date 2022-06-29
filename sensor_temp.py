@@ -1,6 +1,6 @@
 #%%sensor_temp.py
 # Giuliano Basso
-import serial as sr
+import serial as ser
 import serial.tools.list_ports
 import numpy as np
 import os 
@@ -11,10 +11,10 @@ import serial
 import matplotlib.pyplot as plt
 from astropy.io import ascii
 from astropy.table import Table, Column, MaskedColumn
-#%% Comunicacion 
+#%% Funciones de comunicacion con el sensor
 
 def getHelp(serial_port):
-    '''Le pide al sensor que printee el menu de ayuda'''
+    '''Printea el menu de ayuda'''
     serial_port.write(b'h\r')
     time.sleep(0.1)
     while serial_port.in_waiting>0:
@@ -23,10 +23,9 @@ def getHelp(serial_port):
         print(recentPacketString)
         time.sleep(0.1)
 
-def getTemp(serial_port,channel=1):
-    '''Comunica al sensor el comando para obtener la temperatura del canal especificado'''
+def getTemp(serial_port,channel=10):
+    '''Printea la temperatura del canal especificado (default: 1)'''
     commandstr = 't'+str(channel)+'\r'
-    
     serial_port.write(commandstr.encode('utf-8'))
     time.sleep(0.1)
     recentPacket = serial_port.readline()
@@ -57,9 +56,9 @@ def getTimeTemp(serialObj,t_0):
             temp_array_2.append(Temp_2)
             date_array.append(t.strftime('%H %M %S %f'))
             time_array.append(dt.total_seconds())
-            time.sleep(0.89)
+            time.sleep(0.2)
             
-            fig = plt.figure()
+            fig = plt.figure(figsize=(8,7))
             fig.add_subplot(111)
             plt.plot(time_array,temp_array,'o-',label='CH1')
             plt.plot(time_array,temp_array_2,'o-',label='CH2')
@@ -97,19 +96,26 @@ def getTimeTemp(serialObj,t_0):
     return temp_array,temp_array_2,date_array,time_array,fecha_salvado,last_figure       
 
 #%% leo Puertos
-ports_detected = serial.tools.list_ports.grep(regexp='USB')
-ports_detected_2 = serial.tools.list_ports.comports()
+ports_detected = serial.tools.list_ports.comports(include_links=False)
+port_names=[]
 
-# %
-for port in ports_detected_2:
-    print(port.device)
-    print(port.name)
-    print(port.description)
-    print(port.hwid)
-    print('-'*20) 
+for port in ports_detected:
+    port_names.append(port.name)
+    print('Puertos detectados:')
+    print('-'*40) 
+    print('Device: ',port.device)
+    print('Name: ',port.name)
+    print('Descritption: ',port.description)
+    print('hwid: ',port.hwid)
+
+for index,port in enumerate(ports_detected):
+    '''Loop para eliminar puertos extra detectados con Linux'''
+    if 'USB' not in port.device:
+        #print('Puerto eliminado: ',index,port)
+        ports_detected.remove(port)
 
 # %% Elijo el 0 que en windows es el unico que detecta
-pserie = sr.Serial(port='COM4',baudrate= 9600,stopbits=1,timeout=0)
+pserie = ser.Serial(port=ports_detected[0].device,baudrate= 9600,stopbits=1,timeout=0)
 if pserie.is_open:
     print(f'Puerto serie {pserie.name} abierto')
 else:
