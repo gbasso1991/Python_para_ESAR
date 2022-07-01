@@ -44,7 +44,7 @@ plt.ylabel('Magnetizacion Masica (Am$^2$/kg)')
 plt.title('VSM en Ferroresina A')
 plt.xlim(1e6,1.6e6)
 plt.ylim(0.83,0.855)
-plt.legend( bbox_to_anchor=(1.01, 1))
+plt.legend( bbox_to_anchor=(0, -0.15),ncol=3)
 
 
 plt.show()
