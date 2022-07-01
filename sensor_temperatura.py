@@ -1,137 +1,180 @@
-#%%sensor_temperatura.py
-
-from socket import timeout
-from tkinter import *
+#%%sensor_temp.py
+# Giuliano Basso
+import serial as ser
 import serial.tools.list_ports
+import numpy as np
+import os 
 import functools
+import time
+from datetime import datetime, timedelta
+import serial
+import matplotlib.pyplot as plt
+from astropy.io import ascii
+from astropy.table import Table, Column, MaskedColumn
+#%% Funciones de comunicacion con el sensor
 
-ports = serial.tools.list_ports.comports()
-for p in ports:
-    print(p.name)
-#serialObj = serial.Serial(port='COM3',baudrate=9600,timeout=1)
-
-
-#%%
-import time 
-import serial 
-import serial.tools.miniterm
-
-serialObj = serial.Serial('COM4', baudrate=9600, stopbits=1,timeout=1) 
-print('Port Details ->',serialObj)
-
-print('readable:',serialObj.readable())
-print('writable: ',serialObj.writable())
-print('in_waiting: ',serialObj.in_waiting)
-print('baudrate: ',serialObj.baudrate)
-#%%
-sendMsj = serialObj.write(b'b E')
-
-print('BytesWritten = ', sendMsj)
-ReceivedString = serialObj.read() #readline reads a string terminated by \n
-print('Respuesta: ',ReceivedString.decode('utf8'))
-#%%
-EchoedVar    = serialObj.read() 
-print (EchoedVar)
-serialObj.close()
-#%%
-ReceivedString = serialObj.readline() #readline reads a string terminated by \n
-print(ReceivedString)
-#%%
-
-def checkSerialPort():
-    print(serialObj.isOpen(),serialObj.in_waiting)
-    if serialObj.isOpen() and serialObj.in_waiting:
-        recentPacket = serialObj.readline()
-        recentPacketString = recentPacket.decode('utf').rstrip('\n')
+def getHelp(serial_port):
+    '''Printea el menu de ayuda'''
+    serial_port.write(b'h\r')
+    time.sleep(0.1)
+    while serial_port.in_waiting>0:
+        recentPacket = serial_port.readline()
+        recentPacketString = recentPacket.decode('utf-8','ignore')#.rstrip('\n*')
         print(recentPacketString)
-        #Label(dataFrame,text=recentPacketString,font=('Calibri','13'),bg='white').pack() 
-while True:
-    #root.update()
-    checkSerialPort()
+        time.sleep(0.1)
 
+def getTemp(serial_port,channel=10):
+    '''Printea la temperatura del canal especificado (default: 1)'''
+    commandstr = 't'+str(channel)+'\r'
+    serial_port.write(commandstr.encode('utf-8'))
+    time.sleep(0.1)
+    recentPacket = serial_port.readline()
+    recentPacketString = recentPacket.decode('utf-8','ignore')
+    temperature = float(recentPacketString.rstrip())
+    #print(temperature)
+    serial_port.reset_input_buffer()
+    return temperature
 
+def getTimeTemp(serialObj,t_0):
+    '''Toma un objeto Serial y un tiempo inicial.
+    Se comunica con el sensor y lee respuesta
+    Devuelve 3 listas: Temperatura, Fecha, tiempo absoluto'''
+    temp_array=[]
+    temp_array_2=[]
+    date_array = []
+    time_array =[]
 
+    #Loop para obtener temperaturas cada 1 s
+    while True:
+        try:
+            Temp = getTemp(serialObj,1) #CH1
+            Temp_2 = getTemp(serialObj,2) #CH2
+            t= datetime.now()
+            dt = datetime.now() - t_0 
+            print(Temp,'-',Temp_2,'-',t,'-',dt)
+            temp_array.append(Temp)
+            temp_array_2.append(Temp_2)
+            date_array.append(t.strftime('%H %M %S %f'))
+            time_array.append(dt.total_seconds())
+            time.sleep(0.2)
+            
+            fig = plt.figure(figsize=(8,7))
+            fig.add_subplot(111)
+            plt.plot(time_array,temp_array,'o-',label='CH1')
+            plt.plot(time_array,temp_array_2,'o-',label='CH2')
+            plt.legend()
+            plt.grid()
+            plt.xticks(rotation=45, ha='right')
+            plt.subplots_adjust(bottom=0.30)
+            plt.title('Temperature vs t')
+            plt.ylabel('Temperatura (ºC)')
+            plt.xlabel('t (s)')
+            plt.pause(0.2)
+            plt.tight_layout()
+            #time.sleep(2)
+            plt.close()
+        
+        except KeyboardInterrupt:
+            fecha_salvado= datetime.today().strftime('%Y_%m_%d_%H%M%S')
+            last_figure = plt.figure(figsize=(8,7))
+            last_figure.add_subplot(111)
+            plt.plot(time_array,temp_array,'o-',label='CH1')
+            plt.plot(time_array,temp_array_2,'o-',label='CH2')
+            plt.legend()
+            plt.grid()
+            plt.xticks(rotation=45, ha='right')
+            plt.subplots_adjust(bottom=0.30)
+            plt.title('Temperatura vs. t')
+            plt.ylabel('Temperatura (ºC)')
+            plt.xlabel('t (s)')
+            plt.tight_layout()
+            plt.savefig(f'registro_T_vs_t_'+ str(fecha_salvado)+'.png',dpi=300, facecolor='w')
+            serialObj.close()
+            print(f'Puerto serie {serialObj.name} cerrado')
+            break
+            
+    return temp_array,temp_array_2,date_array,time_array,fecha_salvado,last_figure       
 
-#%% Receptor
+#%% leo Puertos
+ports_detected = serial.tools.list_ports.comports(include_links=False)
+port_names=[]
 
-ser2=serial.Serial('COM8',9600,serial.EIGHTBITS,timeout=1) 
-if ser2.isOpen:
-    print('ser2 open')
+for port in ports_detected:
+    port_names.append(port.name)
+    print('Puertos detectados:')
+    print('-'*40) 
+    print('Device: ',port.device)
+    print('Name: ',port.name)
+    print('Descritption: ',port.description)
+    print('hwid: ',port.hwid)
+
+for index,port in enumerate(ports_detected):
+    '''Loop para eliminar puertos extra detectados con Linux'''
+    if 'USB' not in port.device:
+        #print('Puerto eliminado: ',index,port)
+        ports_detected.remove(port)
+
+# %% Elijo el 0 que en windows es el unico que detecta
+pserie = ser.Serial(port=ports_detected[0].device,baudrate= 9600,stopbits=1,timeout=0)
+if pserie.is_open:
+    print(f'Puerto serie {pserie.name} abierto')
+else:
+    print('puerto cerrado')
+# %%
+
+#getHelp(pserie)
+
+#getTemp(pserie)
+
 #%%
-ser.write('todo bien'.encode('utf-8'))
-ser2.readline().decode('utf-8')
+t_0 = datetime.now()
+TempCH1,TempCH2,fecha,tiempo,fecha_salvado,figura = getTimeTemp(pserie,t_0=t_0)
+#%%
+#Encabezado del archivo de salida 
+encabezado_salida = ['t (s)','Temp CH1 (°C)','Temp CH2 (°C)'] 
+col_0 = tiempo
+col_1 = TempCH1
+col_2 = TempCH2
+#Armo la tabla    
+salida = Table([col_0, col_1,col_2]) 
+formato_salida = {'t (s)':'%12.6f','Temp CH1 (°C)':'%.1f','Temp CH2 (°C)':'%.1f'} 
+
+salida.meta['comments'] = [fecha_salvado]
+
+ascii.write(salida,'registro_T_vs_t_'+ str(fecha_salvado) +'.txt',
+            names=encabezado_salida,
+            overwrite=True,
+            delimiter='\t',
+            formats=formato_salida)
 
 #%%
-print(ser.cts)
-ser.close()
-ser2.close()
+if pserie.is_open:
+   print(f'Puerto serie {pserie.device} abierto') 
 
 
-#%%    
-    
-    recentPacket = ser.readlines()
-    print([e.decode('utf') for e in recentPacket])
-    for  e,i in enumerate(recentPacket):
-        recentPacketString = e.decode('utf-8')
-        print('recent' ,i, recentPacketString)
-    
-#%%
-serialObj = serial.Serial('COM3', 9600, serial.EIGHTBITS,timeout=1)
-#%%
 
-print('open:',serialObj.is_open)
-print('readable:',serialObj.readable())
-print('in_waiting: ',serialObj.in_waiting)
 
-#%%
-root = Tk()
-root.config(bg='grey')
+#%% calibracion
+# =============================================================================
 
-serialObj.close()
-currentPort=str(ports[0])
-print(currentPort)
-comPortVar= str(currentPort.split(' ')[0])
-serialObj.port= comPortVar
-serialObj.baudrate= 9600
-serialObj.open()
-#%%
-#def initComPort(index):
-    #serialObj.close()
-    #currentPort=str(ports[index])
-    #print(currentPort)
-    #comPortVar= str(currentPort.split(' ')[0])
-    #serialObj.port= comPortVar
-    #serialObj.baudrate= 9600
-    #serialObj.open()
+# '''Force temperature procedure:
+#         I. Apply a stable and known temperature to the sensor tip
+#         II. Check the display reading for abnormal deviation from the known temperature
+#         III. Send the “f” command followed by channel number, a blank character and the reference
+#         temperature value (example “f2 27.0 \r“). Temperatures must be entered in units as
+#         specified by the “u” command
+#         IV. Wait a few seconds
+#         V. Confirm that the readings correspond to the known temperature. '''
 
-for onePort in ports:
-    comBotton = Button(root,text=onePort,font=('Calibri','13'),height=1,width=45,command= functools.partial(initComPort,index=ports.index(onePort)) )
-    comBotton.grid(row=ports.index(onePort),column=0)
-
-dataCanvas = Canvas(root,width=600,height=400,bg='white')
-dataCanvas.grid(row=0,column=1,rowspan=100)
-
-vsb = Scrollbar(root,orient='vertical',command= dataCanvas.yview)
-vsb.grid(row=0,column=2,rowspan=100,sticky='ns')
-
-dataCanvas.config(yscrollcommand=vsb.set)
-
-dataFrame= Frame(dataCanvas,bg='white')
-dataCanvas.create_window((10,0),window=dataFrame,anchor='nw')
-
-#%%
-def checkSerialPort():
-    print(serialObj.isOpen(),serialObj.in_waiting)
-    if serialObj.isOpen() and serialObj.in_waiting:
-        recentPacket = serialObj.readline()
-        recentPacketString = recentPacket.decode('utf').rstrip('\n')
-        print(recentPacketString)
-        #Label(dataFrame,text=recentPacketString,font=('Calibri','13'),bg='white').pack() 
-#%%
-
-while True:
-    #root.update()
-    checkSerialPort()
-    #dataCanvas.config(scrollregion=dataCanvas.bbox('all'))
-
-#%%
+# pserie.write(b'f1 18.4 \r')
+# 
+# 
+# =============================================================================
+# =============================================================================
+# 
+# data =  np.loadtxt(fname='registro_T_vs_t_2022_05_23_140256.txt',skiprows=2,delimiter='\t')
+# t =data[:,0]
+# temp =data[:,1]
+# plt.plot(t,temp,'.-')
+# 
+# =============================================================================
