@@ -539,7 +539,7 @@ def promediado_ciclos(t,v_r,v,frecuencia,N_ciclos):
     '''Paso temporal'''
     delta_t = (t_f[-1]-t_f[0])/len(t_f)
     return t_f , v_r_f, v_f , delta_t
-
+#%% El kernel
 def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limite_m,frec_limite_cal,name):
     '''
     Toma señales de muestra, calibracion y referencia obtieniendo via fft frecuencias y fases.
@@ -1063,7 +1063,7 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     ax2.grid() 
     ax2.legend(loc='best')
 
-    return armonicos, armonicos_r, amplitudes, amplitudes_r, fases , fases_r , fig, fig2, indices, indx_impar, rec_impares,rec_impares_c,fig3,fig4,fig5,fig6,  t,y, rec_impares, rec_pares ,armonicos[0],t_c,y_c,rec_impares_c,rec_pares_c,armonicos_c,f_impar_c,amp_impar_c,armonicos_r,f_impar ,amp_impar,f
+    return armonicos, armonicos_r, amplitudes, amplitudes_r, fases , fases_r , fig, fig2, indices, indx_impar, rec_impares,rec_impares_c,fig3,fig4,fig5,fig6
 
 #%% Manual Settings
 '''
@@ -1114,7 +1114,7 @@ Analisis_de_Fourier = 1 # sobre las señales, imprime espectro de señal muestra
 #¿Quiere generar una imagen png con cada ciclo M vs. H obtenido? 
 # escriba guarda_imagen_ciclo=1. Caso contrario, deje 0 o cualquier otro valor.
 guarda_imagen_ciclo=1
-concentracion = 25000 #[concentracion]= g/m^3 (1e4 g/m^3 == 10 g/l) (Default = 10000 g/m^3)
+concentracion = 25890 #[concentracion]= g/m^3 (1000 g/m^3 == 1 g/l) (Default = 10000 g/m^3)
 mu_0 = 4*np.pi*10**-7 #[mu_0]=N/A^2
 nombre_archivo_salida = 'Resultados_ESAR.dat'
 textofondo = '_fondo.txt' #Texto que identifica los archivos de fondo
@@ -1481,11 +1481,11 @@ for k in range(len(fnames_m)):
     # Fourier
     #Analisis de Fourier sobre las señales
     if Analisis_de_Fourier == 1:
-        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=40*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
+        armonicos_m,armonicos_r,amplitudes_m,amplitudes_r,fases_m,fases_r,fig_fourier, fig2_fourier, indices_m,indx_mult_m, muestra_rec_impar,cal_rec_impar,fig3_fourier,fig4_fourier,fig5_fourier,fig6_fourier = fourier_señales(t_m_3,t_c_3,Resta_m_3,Resta_c_3,v_r_m_3,v_r_c_3,delta_t[k],polaridad,filtro=0.05,frec_limite_m=30*frec_final_m,frec_limite_cal=1.5*frec_final_c,name=fnames_m[k])
 
         # Guardo Graficos
-        fig_fourier.savefig(fnames_m[k][:-4]+'_Espectro_Fourier_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
-        fig2_fourier.savefig(fnames_m[k][:-4]+'_Rec_impar_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=300,facecolor='w')
+        fig_fourier.savefig(fnames_m[k][:-4]+'_Espectro_Fourier_{}'.format(k)+str(fecha_nombre)+'.png',dpi=200,facecolor='w')
+        fig2_fourier.savefig(fnames_m[k][:-4]+'_Rec_impar_{}_'.format(k)+str(fecha_nombre)+'.png',dpi=200,facecolor='w')
         #plt.close(fig='all')   #cierro todas las figuras
         
         #Reemplazo señal recortada con la filtrada en armonicos impares en muestra y calibracion: 
@@ -1705,7 +1705,7 @@ salida = Table([col_0, col_1, col_2, col_3, col_4, col_5, col_6])
 formato_salida = {'Nombre del archivo analizado':'%s',
                   'Frecuencia (kHz)':'%f',
                   'Campo Maximo (kA/m)':'%f',
-                  'SAR (W/g)': '%uf',
+                  'SAR (W/g)': '%f',
                   'Coercitividad (kA/m)': '%f',
                   'Remanencia (kA/m)': '%f', 
                   'Peor quita de ruido porcentual': '%f'} 
