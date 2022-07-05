@@ -1,0 +1,8 @@
+Referencias bibliograficas para poster 'Ciclos magnéticos de radiofrecuencia para nanoflores magnéticas incorporadas en tejido tumoral ex vivo' 
+
+[1] I. J. Bruvera, R. Hernández, C. Mijangos, G. Goya, An integrated device for magnetically-driven drug release and in situ quantitative measurements: Design, fabrication and testing, Journal of Magnetism and Magnetic Materials 377 (2015) 446–451.
+[2] N. Manuchehrabadi, Z. Gao, J. Zhang, H. L. Ring, Q. Shao, F. Liu,M. McDermott, A. Fok, Y. Rabin, K. G. Brockbank, et al., Improved tissue cryopreservation using inductive heating of magnetic nanoparticles, Science translational medicine 9 (2017).
+[3] Chiu-Lam, A., Staples, E., Pepine, C. J., Rinaldi, C. Perfusion, cryopreservation, and nanowarming of whole hearts using colloidally stable magnetic cryopreservation agent solutions. Science Advances, 7 (2), eabe3005, 2021. 
+[4] Z. R. Stephen, M. Zhang, Recent progress in the synergistic combination of nanoparticle-mediated hyperthermia and immunotherapy for treatment of cancer, Advanced Healthcare Materials 10 (2021) 2001415.
+[5] Rosensweig, R. E. Heating magnetic fluid with alternating magnetic field. Journal of magnetism and magnetic materials, 252, 370–374, 2002. 9, 10. 
+[6] S. Gudoshnikov, B. Y. Liubimov, Y. S. Sitnov, V. Skomarovsky, N. Usov, Ac magnetic technique to measure specific absorption rate of magnetic nanoparticles, Journal of superconductivity and novel magnetism, 26 (2013) 857–860.
