@@ -684,7 +684,6 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
     frec_multip = []
     indx_impar = []
     indx_par=[]
-
     for n in range(int(frec_limite_m//int(armonicos[0]))):
         frec_multip.append((2*n+1)*armonicos[0]/1000)
         if (2*n+1)*indices[0]<=len(f):
@@ -719,8 +718,13 @@ def fourier_señales(t,t_c,v,v_c,v_r_m,v_r_c,delta_t,polaridad,filtro,frec_limit
 #Reconstruyo señal impar con ifft p/ muestra
     h_aux_impar = np.zeros(len(f),dtype=np.cdouble)
     for W in indx_impar:
-        h_aux_impar[W]=g_aux[W]
+        if abs(g_aux[W])>=max(g)*filtro:
+            h_aux_impar[W]=g_aux[W]
+            print(abs(g_aux[W]),'ok',)
+        else:
+            print(abs(g_aux[W]), 'not ok')
     rec_impares = irfft(h_aux_impar,n=len(t),norm='forward')
+    plt.plot(t,rec_impares)
 #Reconstruyo señal par con ifft
     h_aux_par = np.zeros(len(f),dtype=np.cdouble)
     for Z in indx_par:
