@@ -43,25 +43,42 @@ peso_porc = 100*peso/max(peso)
 deriv_peso = np.gradient(peso_porc)
 
 
-perdida_peso = peso[0]-peso[-1]
-porcentaje_perdido = 100*perdida_peso/masa
-print(f'Weight Loss: {perdida_peso:.2f} {unidad} == {porcentaje_perdido:.2f} %')
 
+T_min= temperatura[(peso_porc==min(peso_porc)).nonzero()][0]
+peso_min= peso_porc[(peso_porc==min(peso_porc)).nonzero()][0]
+
+
+T_max= temperatura[(peso_porc==max(peso_porc)).nonzero()][0]
+peso_max= peso_porc[(peso_porc==max(peso_porc)).nonzero()][0]
+
+
+perdida_porc = peso_max-peso_min
+perdida_masa = masa*perdida_porc/100
+print(f'Weight Loss: {perdida_masa:.2f} {unidad} == {perdida_porc:.2f} %')
 
 #%% Grafico
 fig,ax =plt.subplots()
 ax.plot(temperatura,peso_porc,'-')
+#ax.plot(temperatura[(deriv_peso==0).nonzero()],peso_porc[(deriv_peso==0).nonzero()],'r.')
+#ax.plot(temperatura[(peso_porc==max(peso_porc)).nonzero()],peso_porc[(peso_porc==max(peso_porc)).nonzero()],'b.')
+#ax.plot(temperatura[(peso_porc==min(peso_porc)).nonzero()],peso_porc[(peso_porc==min(peso_porc)).nonzero()],'g.')
+
+#ax2.plot(temperatura,deriv_peso,'-', alpha=0.7)
+
+#plt.vlines(T_max, 50, peso_max,'r',lw=0.7)
+#plt.hlines(peso_max,T_max,1,'r',lw=0.7)
+plt.vlines(T_min, 50, peso_min,'r',lw=0.7)
+plt.hlines(peso_min, 0, T_min,'r',lw=0.7, label=f'Perdida: {perdida_masa:.2f} mg = {perdida_porc:.2f} %')    
+plt.legend()
+plt.title(fnames_m[0] + ' - '+ sample_name) 
+ax2=ax.twinx()
+ax2.plot(temperatura,deriv_peso,'-',color='tab:orange', alpha=0.7)
 
 ax.set_ylabel('Peso (%)')
+ax2.set_ylabel('Deriv Peso (%/°C)')
+
 ax.grid()
 ax.set_xlabel('Temperatura (°C)')
-
-ax2=ax.twinx()
-ax2.plot(temperatura,deriv_peso,'-',c='tab:orange', alpha=0.7)
-ax2.set_ylabel('Derv Peso (%/°C)')
-
-plt.title(fnames_m[0] + ' - '+ sample_name) 
-
-plt.xlim(0,max(temperatura))
+#plt.xlim(0,temperatura[200])
 plt.tight_layout()
 plt.show()
