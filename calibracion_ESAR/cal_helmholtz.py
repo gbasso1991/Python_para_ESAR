@@ -1,10 +1,14 @@
 #%%Calibracion de bobinas en cofiguracion Helmholtz
 # Giuliano Basso
-# Nueva calibracion 10 Feb 2022
+# # 07Marzo 2023 
+# Actualizo valores medidos en sonda hall 1V => 0.1 T luego de que calibracion en VSM
+# arroje diferencia del %16
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 import time
+from calibracion_Hall import C_sonda2_V_to_T
 # %% Datos Medidos 10 Feb - Todos son valores amp
 f_1 = 100 #Hz
 Ref_1 = np.array([1.01,2.02,3.04,4.02,5.02,6.02])  # V
@@ -45,8 +49,7 @@ Hall = np.array([Hall_1,Hall_2,Hall_3,Hall_4,Hall_5,Hall_6,Hall_7,Hall_8],dtype=
 Ref = np.array([Ref_1,Ref_2,Ref_3,Ref_4,Ref_5,Ref_6,Ref_7,Ref_8],dtype='object')
 
 #%% Fact de conversion sonda Hall: 1V = 0.1 T 
-F_V_to_T = 0.1 
-campo_T = Hall*F_V_to_T #paso mV a T
+campo_T = Hall*C_sonda2_V_to_T #paso mV a T
 # %%
 fig, ax = plt.subplots(figsize=(8,5))
 for i in range(len(frecuencias)):
